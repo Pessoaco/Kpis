@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel Diretoria</title>
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232a78d6'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white' font-family='Arial'%3EP%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --ground:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-soft:#52514e; --ink-faint:#898781; --hair:#e1e0d9; --axis:#c3c2b7;
+    --series-previsto:#2a78d6; --series-efetivo:#eb6834;
+    --good:#0ca30c; --critical:#d03b3b;
+    --bnz-bg:#f7e9da; --bnz-ink:#8a4b23; --bnz-edge:#c98f52;
+    --ciaplac-bg:#e3f0ef; --ciaplac-ink:#1f6f6f; --ciaplac-edge:#4fa39c;
+    --shadow:0 1px 2px rgba(11,11,11,.05),0 4px 14px rgba(11,11,11,.045);
+    --radius:9px;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-soft:#c3c2b7; --ink-faint:#898781; --hair:#2c2c2a; --axis:#383835;
+    --series-previsto:#3987e5; --series-efetivo:#d95926;
+    --good:#0ca30c; --critical:#e66767;
+    --bnz-bg:#2a1c0f; --bnz-ink:#e3ab6c; --bnz-edge:#8a5a2c;
+    --ciaplac-bg:#0f2220; --ciaplac-ink:#7cc9c2; --ciaplac-edge:#2f6b64;
+    --shadow:0 1px 2px rgba(0,0,0,.32),0 5px 16px rgba(0,0,0,.26);
+  }}
+  :root[data-theme="dark"]{
+    --ground:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-soft:#c3c2b7; --ink-faint:#898781; --hair:#2c2c2a; --axis:#383835;
+    --series-previsto:#3987e5; --series-efetivo:#d95926;
+    --good:#0ca30c; --critical:#e66767;
+    --bnz-bg:#2a1c0f; --bnz-ink:#e3ab6c; --bnz-edge:#8a5a2c;
+    --ciaplac-bg:#0f2220; --ciaplac-ink:#7cc9c2; --ciaplac-edge:#2f6b64;
+    --shadow:0 1px 2px rgba(0,0,0,.32),0 5px 16px rgba(0,0,0,.26);
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;line-height:1.48;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 14px 60px}
+
+  .masthead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;padding-bottom:8px;border-bottom:3px solid var(--ink)}
+  .masthead h1{font-family:"Archivo",sans-serif;font-weight:700;font-size:clamp(1.05rem,4vw,1.5rem);letter-spacing:-.01em;margin:0}
+  .masthead h1 span{color:var(--ink-soft);font-weight:600}
+  .meta{font-size:.72rem;color:var(--ink-soft)}
+  .tagline{margin:6px 0 0;font-size:.78rem;color:var(--ink-soft);font-style:italic}
+
+  section.card{margin-top:20px;background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .card h2{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.05rem;margin:0 0 3px}
+  .card .sub{font-size:.8rem;color:var(--ink-soft);margin:0 0 14px}
+
+  .controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:16px}
+  .seg{display:inline-flex;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--surface)}
+  .seg button{font:inherit;font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;padding:6px 13px;border:0;border-left:1px solid var(--hair);background:transparent;color:var(--ink-soft);cursor:pointer}
+  .seg button:first-child{border-left:0}
+  .seg button.on{background:var(--series-previsto);color:#fff}
+  .seg.empresa button.on{background:var(--ciaplac-edge);color:#fff}
+  .seg.empresa button[data-emp="BNZ"].on{background:var(--bnz-edge)}
+  .statusbar{font-size:.72rem;color:var(--ink-faint);margin-left:auto}
+
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .stat{border:1px solid var(--hair);border-radius:8px;padding:11px 12px;display:flex;flex-direction:column;gap:3px}
+  .stat .k{font-family:"Archivo",sans-serif;font-weight:600;font-size:.63rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
+  .stat .v{font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:1.6rem;color:var(--ink);font-variant-numeric:tabular-nums}
+  .stat.critical .v{color:var(--critical)}
+  .stat .note{font-size:.68rem;color:var(--ink-faint)}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.74rem;color:var(--ink-soft);margin-bottom:6px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend .dot{width:10px;height:10px;border-radius:50%;flex:none}
+
+  .chart-wrap{position:relative;overflow-x:auto}
+  svg.chart{display:block}
+  .grid-line{stroke:var(--hair);stroke-width:1}
+  .axis-line{stroke:var(--axis);stroke-width:1}
+  .axis-label{fill:var(--ink-faint);font-size:10px;font-family:"IBM Plex Sans",sans-serif}
+  .line-previsto{fill:none;stroke:var(--series-previsto);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  .line-efetivo{fill:none;stroke:var(--series-efetivo);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  .dot-previsto{fill:var(--series-previsto);stroke:var(--surface);stroke-width:2}
+  .dot-efetivo{fill:var(--series-efetivo);stroke:var(--surface);stroke-width:2}
+  .dot-efetivo.atrasado{fill:var(--critical)}
+  .dot-efetivo.pendente{fill:var(--ink-faint);opacity:.5}
+  .hover-target{fill:transparent;cursor:pointer}
+
+  .tooltip{position:absolute;pointer-events:none;background:var(--ink);color:var(--ground);font-size:.72rem;padding:7px 10px;border-radius:6px;line-height:1.5;white-space:nowrap;transform:translate(-50%,-100%);box-shadow:var(--shadow);z-index:10}
+  .tooltip b{font-weight:700}
+  .tooltip .atraso-tag{display:inline-block;margin-top:2px;font-weight:700}
+  .tooltip .atraso-tag.late{color:#ff9d9c}
+  .tooltip .atraso-tag.ok{color:#7ee787}
+
+  .loading,.empty-msg{padding:30px 0;text-align:center;color:var(--ink-faint);font-size:.85rem}
+  .updated{margin-top:20px;text-align:right;font-size:.71rem;color:var(--ink-faint)}
+
+  @media (max-width:700px){
+    .stat-row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>Painel Diretoria <span>— Indicadores</span></h1>
+    <div class="meta" id="hoje">—</div>
+  </header>
+  <p class="tagline">Indicadores ao vivo, direto da Odoo — página cresce conforme novos indicadores forem adicionados.</p>
+
+  <section class="card" id="card-entrega">
+    <h2>Indicador de Entrega — Prazo Prometido x Real</h2>
+    <p class="sub">Previsto = data do pedido + 15 dias úteis. Efetivo = data de conclusão da entrega (<code>effective_date</code>).</p>
+
+    <div class="controls">
+      <div class="seg empresa" id="seg-empresa">
+        <button data-emp="CIAPLAC" class="on">CIAPLAC</button>
+        <button data-emp="BNZ">BNZ</button>
+        <button data-emp="">Total</button>
+      </div>
+      <div class="seg" id="seg-periodo">
+        <button data-per="mes" class="on">Mês atual</button>
+        <button data-per="3">Últ. 3 meses</button>
+        <button data-per="6">Últ. 6 meses</button>
+        <button data-per="12">Últ. 12 meses</button>
+      </div>
+      <div class="statusbar" id="statusbar">carregando…</div>
+    </div>
+
+    <div id="entrega-body">
+      <div class="loading" id="entrega-loading">carregando indicador…</div>
+    </div>
+  </section>
+
+  <p class="updated">Painel Diretoria · atualizado em <span id="updated-at">—</span></p>
+</div>
+
+<script>
+const WEBHOOK_URL = "https://auto.ialink.com.br/webhook/painel-diretoria-entrega";
+
+const $  = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function parseISOLocal(s){
+  const [y,m,d] = String(s).slice(0,10).split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function fmtDateBR(s){
+  if(!s) return '—';
+  const d = parseISOLocal(s);
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+
+let TODOS_PEDIDOS = [];
+let empresa = 'CIAPLAC';
+let periodo = 'mes';
+
+function filtrarPedidos(){
+  const hoje = new Date();
+  let desde;
+  if(periodo === 'mes'){ desde = new Date(hoje.getFullYear(), hoje.getMonth(), 1); }
+  else { desde = new Date(hoje.getFullYear(), hoje.getMonth() - Number(periodo), hoje.getDate()); }
+
+  return TODOS_PEDIDOS.filter(p => {
+    if(empresa && p.empresa !== empresa) return false;
+    const dp = parseISOLocal(p.data_pedido);
+    return dp >= desde;
+  }).sort((a,b) => a.data_pedido < b.data_pedido ? -1 : (a.data_pedido > b.data_pedido ? 1 : 0));
+}
+
+function renderStats(pedidos){
+  const comEfetivo = pedidos.filter(p => p.efetivo);
+  const atrasados = comEfetivo.filter(p => p.atraso_dias > 0);
+  const mediaAtraso = comEfetivo.length ? (comEfetivo.reduce((s,p)=>s+p.atraso_dias,0)/comEfetivo.length) : 0;
+  const piorAtraso = comEfetivo.reduce((max,p)=> Math.max(max, p.atraso_dias), 0);
+  const pctNoPrazo = comEfetivo.length ? Math.round(100*(comEfetivo.length-atrasados.length)/comEfetivo.length) : 0;
+
+  return `
+    <div class="stat-row">
+      <div class="stat ${mediaAtraso>0?'critical':''}">
+        <span class="k">Atraso médio</span>
+        <span class="v">${mediaAtraso>=0?'+':''}${mediaAtraso.toFixed(1)}d</span>
+        <span class="note">vs. o prazo de 15 dias úteis prometido</span>
+      </div>
+      <div class="stat ${piorAtraso>0?'critical':''}">
+        <span class="k">Pior atraso no período</span>
+        <span class="v">${piorAtraso>0?'+'+piorAtraso:'0'}d</span>
+        <span class="note">maior atraso entre os pedidos concluídos</span>
+      </div>
+      <div class="stat">
+        <span class="k">Entregues no prazo</span>
+        <span class="v">${pctNoPrazo}%</span>
+        <span class="note">${comEfetivo.length-atrasados.length} de ${comEfetivo.length} pedidos concluídos (${pedidos.length-comEfetivo.length} ainda pendente)</span>
+      </div>
+    </div>`;
+}
+
+function renderChart(pedidos){
+  if(!pedidos.length) return '<div class="empty-msg">Nenhum pedido confirmado nesse período/empresa.</div>';
+
+  const W = Math.max(560, pedidos.length * 34);
+  const H = 320;
+  const padL = 78, padR = 20, padT = 16, padB = 40;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+
+  let minDate = null, maxDate = null;
+  pedidos.forEach(p => {
+    [p.previsto, p.efetivo].forEach(s => {
+      if(!s) return;
+      const d = parseISOLocal(s);
+      if(!minDate || d < minDate) minDate = d;
+      if(!maxDate || d > maxDate) maxDate = d;
+    });
+  });
+  const spanMs = Math.max(1, maxDate - minDate);
+  const yFor = d => padT + plotH - ((d - minDate) / spanMs) * plotH;
+  const xFor = i => padL + (pedidos.length === 1 ? plotW/2 : (i/(pedidos.length-1)) * plotW);
+
+  // grid + eixo Y (5 marcas de data)
+  let gridSvg = '';
+  const N_TICKS = 5;
+  for(let t=0; t<=N_TICKS; t++){
+    const d = new Date(minDate.getTime() + spanMs * (t/N_TICKS));
+    const y = yFor(d);
+    gridSvg += `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}"/>`;
+    gridSvg += `<text class="axis-label" x="${padL-8}" y="${y+3}" text-anchor="end">${fmtDateBR(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))}</text>`;
+  }
+
+  const ptsPrevisto = pedidos.map((p,i) => ({x:xFor(i), y:yFor(parseISOLocal(p.previsto))}));
+  const linhaPrevisto = ptsPrevisto.map((pt,i) => (i===0?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)).join(' ');
+
+  const comEfetivo = pedidos.map((p,i) => p.efetivo ? {x:xFor(i), y:yFor(parseISOLocal(p.efetivo))} : null);
+  let linhaEfetivo = '';
+  comEfetivo.forEach((pt,i) => { if(pt) linhaEfetivo += (linhaEfetivo===''?'M':'L')+pt.x.toFixed(1)+','+pt.y.toFixed(1)+' '; });
+
+  let dotsSvg = '';
+  pedidos.forEach((p,i) => {
+    const xp = xFor(i), yp = yFor(parseISOLocal(p.previsto));
+    dotsSvg += `<circle class="dot-previsto" cx="${xp}" cy="${yp}" r="4"></circle>`;
+    if(p.efetivo){
+      const ye = yFor(parseISOLocal(p.efetivo));
+      const cls = p.atraso_dias > 0 ? 'atrasado' : '';
+      dotsSvg += `<circle class="dot-efetivo ${cls}" cx="${xp}" cy="${ye}" r="4"></circle>`;
+    }
+  });
+
+  // faixas de hover (uma coluna por pedido, cobre toda a altura)
+  let hoverSvg = '';
+  pedidos.forEach((p,i) => {
+    const xp = xFor(i);
+    const w = pedidos.length>1 ? plotW/(pedidos.length-1) : plotW;
+    hoverSvg += `<rect class="hover-target" data-idx="${i}" x="${(xp-w/2).toFixed(1)}" y="${padT}" width="${w.toFixed(1)}" height="${plotH}"></rect>`;
+  });
+
+  const svg = `
+    <svg class="chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+      ${gridSvg}
+      <line class="axis-line" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}"/>
+      <line class="axis-line" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>
+      <path class="line-previsto" d="${linhaPrevisto}"/>
+      <path class="line-efetivo" d="${linhaEfetivo}"/>
+      ${dotsSvg}
+      ${hoverSvg}
+    </svg>`;
+
+  return `
+    <div class="legend">
+      <span><span class="dot" style="background:var(--series-previsto)"></span>Previsto (pedido + 15 dias úteis)</span>
+      <span><span class="dot" style="background:var(--series-efetivo)"></span>Efetivo (dentro do prazo)</span>
+      <span><span class="dot" style="background:var(--critical)"></span>Efetivo (atrasado)</span>
+    </div>
+    <div class="chart-wrap" id="chart-wrap">${svg}</div>`;
+}
+
+function attachHover(pedidos){
+  const wrap = $('#chart-wrap');
+  if(!wrap) return;
+  let tip = document.createElement('div');
+  tip.className = 'tooltip'; tip.hidden = true;
+  wrap.style.position = 'relative';
+  wrap.appendChild(tip);
+
+  wrap.querySelectorAll('.hover-target').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      const idx = Number(el.dataset.idx);
+      const p = pedidos[idx];
+      const rect = wrap.getBoundingClientRect();
+      const x = e.clientX - rect.left + wrap.scrollLeft;
+      const y = e.clientY - rect.top;
+      let atrasoHtml = '<span class="atraso-tag" style="color:#aaa">ainda não entregue</span>';
+      if(p.efetivo != null && p.atraso_dias != null){
+        if(p.atraso_dias > 0) atrasoHtml = `<span class="atraso-tag late">+${p.atraso_dias} dias de atraso</span>`;
+        else atrasoHtml = `<span class="atraso-tag ok">${p.atraso_dias===0?'no prazo':(Math.abs(p.atraso_dias)+' dias antes do prazo')}</span>`;
+      }
+      tip.innerHTML = `<b>${p.pedido}</b> · ${p.cliente||''}<br>Pedido: ${fmtDateBR(p.data_pedido)} · Previsto: ${fmtDateBR(p.previsto)} · Efetivo: ${fmtDateBR(p.efetivo)}<br>${atrasoHtml}`;
+      tip.style.left = x+'px'; tip.style.top = Math.max(70, y)+'px'; tip.hidden = false;
+    });
+    el.addEventListener('mouseleave', () => { tip.hidden = true; });
+  });
+}
+
+function renderEntrega(){
+  const pedidos = filtrarPedidos();
+  $('#entrega-body').innerHTML = renderStats(pedidos) + renderChart(pedidos);
+  attachHover(pedidos);
+}
+
+async function load(){
+  $('#statusbar').textContent = 'atualizando…';
+  try{
+    const r = await fetch(WEBHOOK_URL, {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    TODOS_PEDIDOS = data.pedidos || [];
+    $('#entrega-loading').hidden = true;
+    $('#updated-at').textContent = fmtDateBR((data.atualizado_em||'').slice(0,10)) + ' ' + new Date(data.atualizado_em||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    $('#hoje').textContent = new Date().toLocaleDateString('pt-BR');
+    $('#statusbar').textContent = 'ao vivo · ' + TODOS_PEDIDOS.length + ' pedidos (12 meses)';
+    renderEntrega();
+  }catch(err){
+    $('#entrega-loading').innerHTML = 'Não consegui carregar. <button onclick="load()">Tentar de novo</button>';
+    $('#statusbar').textContent = 'erro ao carregar';
+  }
+}
+
+$('#seg-empresa').addEventListener('click', e => {
+  const b = e.target.closest('button[data-emp]'); if(!b) return;
+  empresa = b.dataset.emp;
+  $$('#seg-empresa button').forEach(x => x.classList.toggle('on', x===b));
+  renderEntrega();
+});
+$('#seg-periodo').addEventListener('click', e => {
+  const b = e.target.closest('button[data-per]'); if(!b) return;
+  periodo = b.dataset.per;
+  $$('#seg-periodo button').forEach(x => x.classList.toggle('on', x===b));
+  renderEntrega();
+});
+
+load();
+</script>
+</body>
+</html>
