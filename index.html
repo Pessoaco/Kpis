@@ -65,6 +65,11 @@
   .seg.empresa button.on{background:var(--ciaplac-edge);color:#fff}
   .seg.empresa button[data-emp="BNZ METAIS"].on{background:var(--bnz-edge)}
   .statusbar{font-size:.72rem;color:var(--ink-faint);margin-left:auto}
+  .busca-cliente{font:inherit;font-size:.76rem;padding:6px 12px;border:1px solid var(--hair);border-radius:8px;background:var(--surface);color:var(--ink);min-width:190px}
+  .busca-cliente::placeholder{color:var(--ink-faint)}
+  .resumo-cliente{display:flex;gap:16px;flex-wrap:wrap;font-size:.74rem;color:var(--ink-soft);font-weight:600;margin:-2px 0 10px}
+  .resumo-cliente span.critical{color:var(--critical)}
+  .resumo-cliente span.good{color:var(--good)}
 
   .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
   .stat{position:relative;border:1px solid var(--hair);border-radius:8px;padding:11px 12px;display:flex;flex-direction:column;gap:3px}
@@ -129,11 +134,21 @@
     }
     *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
     :root{--shadow:none}
-    body{background:#fff;font-size:10.5px}
+    /* a tabela usa rem em toda parte, que é relativo ao <html>, não ao <body> — por isso o encolhimento
+       de fonte pra impressão precisa ir no html, senão o font-size do body sozinho não afeta nada */
+    html{font-size:10.5px}
+    body{background:#fff}
     .wrap{max-width:100%;padding:0}
     .controls,.tagline{display:none!important}
     section.card{box-shadow:none;border:1px solid #ccc}
     .chip-filtro button{display:none}
+    /* em vez de deixar o container de rolagem horizontal desenhar a barra de scroll
+       (que fica presa no PDF) se ainda sobrar alguma coisa, corta o overflow limpo aqui */
+    .chart-wrap,.tabela-wrap{overflow-x:hidden}
+    table.tabela-entrega th,table.tabela-entrega td{padding:3px 5px}
+    /* razão social completa do cliente toma espaço demais no papel — trunca com "..." só na impressão,
+       pra sobrar largura pra nome fantasia/região/efetivo/atraso aparecerem inteiros */
+    table.tabela-entrega td:first-child{max-width:80px;overflow:hidden;text-overflow:ellipsis}
   }
 </style>
 <style id="print-page-style"></style>
@@ -160,6 +175,7 @@
         <button data-per="6">Últ. 6 meses</button>
         <button data-per="12">Últ. 12 meses</button>
       </div>
+      <input type="text" id="busca-cliente" class="busca-cliente" placeholder="🔎 Buscar cliente…">
       <div class="statusbar" id="statusbar">carregando…</div>
     </div>
     <h2>Indicador de Entregas — Prazo x Real</h2>
@@ -193,11 +209,37 @@ let empresa = 'CIAPLAC';
 let periodo = 'mes';
 let filtroRegiao = null;
 let filtroSoPendentes = false;
+let buscaCliente = '';
 
 function limparFiltroTabela(){
   filtroRegiao = null;
   filtroSoPendentes = false;
+  buscaCliente = '';
+  const inp = $('#busca-cliente'); if(inp) inp.value = '';
   renderEntrega();
+}
+
+// Busca por cliente é independente do Período (é uma consulta pontual, não um recorte do
+// relatório) — olha os 12 meses inteiros carregados, só respeitando a Empresa selecionada.
+function filtrarPorCliente(termo){
+  const t = termo.toLowerCase();
+  return TODOS_PEDIDOS.filter(p => (!empresa || p.empresa === empresa) &&
+    (((p.cliente||'').toLowerCase().includes(t)) || ((p.fantasia||'').toLowerCase().includes(t)))
+  ).sort((a,b) => b.data_pedido < a.data_pedido ? -1 : (b.data_pedido > a.data_pedido ? 1 : 0));
+}
+
+function renderResumoCliente(lista){
+  const comEfetivo = lista.filter(p => p.efetivo);
+  const noPrazo = comEfetivo.filter(p => p.atraso_dias <= 0).length;
+  const pendentes = lista.length - comEfetivo.length;
+  const atrasoMedio = comEfetivo.length ? comEfetivo.reduce((s,p) => s + p.atraso_dias, 0) / comEfetivo.length : null;
+  const pct = comEfetivo.length ? Math.round(100*noPrazo/comEfetivo.length) : null;
+  return `<div class="resumo-cliente">
+    <span>${lista.length} pedido(s) encontrado(s)</span>
+    ${pct!=null?`<span class="${pct>=80?'good':'critical'}">${pct}% no prazo</span>`:''}
+    ${atrasoMedio!=null?`<span class="${atrasoMedio>0?'critical':'good'}">Atraso médio: ${atrasoMedio>=0?'+':''}${atrasoMedio.toFixed(1)}d</span>`:''}
+    ${pendentes?`<span>${pendentes} ainda sem entrega</span>`:''}
+  </div>`;
 }
 
 const PERIODO_LABEL = { mes:'no Mês Atual', '3':'nos Últimos 3 Meses', '6':'nos Últimos 6 Meses', '12':'nos Últimos 12 Meses' };
@@ -376,10 +418,13 @@ function renderEvolucao(){
 function renderTabela(pedidos){
 
   let chipFiltro = '';
-  if(filtroSoPendentes || filtroRegiao){
+  if(buscaCliente){
+    chipFiltro = `<span class="chip-filtro">Cliente: ${buscaCliente} <button onclick="limparFiltroTabela()">✕ limpar</button></span>`;
+  } else if(filtroSoPendentes || filtroRegiao){
     const txt = filtroSoPendentes ? 'Só pedidos pendentes' : `Região: ${filtroRegiao}`;
     chipFiltro = `<span class="chip-filtro">${txt} <button onclick="limparFiltroTabela()">✕ limpar</button></span>`;
   }
+  const resumo = buscaCliente ? renderResumoCliente(pedidos) : '';
 
   if(!pedidos.length) return `<p class="tabela-titulo" id="tabela-completa">Lista completa ${chipFiltro}</p><div class="empty-msg">Nenhum pedido encontrado com esse filtro.</div>`;
 
@@ -403,6 +448,7 @@ function renderTabela(pedidos){
   }).join('');
   return `
     <p class="tabela-titulo" id="tabela-completa">Lista completa (${pedidos.length} pedidos) ${chipFiltro}</p>
+    ${resumo}
     <div class="tabela-wrap">
       <table class="tabela-entrega">
         <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Região</th><th>Efetivo</th><th>Atraso</th><th>Pedido</th><th>Data Pedido</th><th>Previsto</th></tr></thead>
@@ -411,16 +457,24 @@ function renderTabela(pedidos){
     </div>`;
 }
 
+// Antes dessa data a Leidi não confirmava entrega (effective_date) direito no Odoo — pedido antigo sem
+// esse campo não é "pendente de verdade", é só falta de registro. Vale só pro card/lista de Pedidos
+// Pendentes; os outros indicadores (Fora do Prazo, No Prazo, Atraso Médio, Evolução, Região) continuam
+// usando a base inteira, sem esse corte — só o pendente é dado não-confiável antes dessa data.
+const DATA_INICIO_CONTROLE_ENTREGA = '2026-08-01';
+const ehPendenteConfiavel = p => !p.efetivo && p.data_pedido >= DATA_INICIO_CONTROLE_ENTREGA;
+
 function renderEntrega(){
   const pedidos = filtrarPedidos();
   const realizadas = filtrarEntregasRealizadas();
-  const pendentesQtd = pedidos.filter(p => !p.efetivo).length;
+  const pendentesQtd = pedidos.filter(ehPendenteConfiavel).length;
 
   // A tabela troca de BASE conforme o filtro clicado: "Pedidos Pendentes" e a Lista padrão usam
   // pedidos (filtro por data do PEDIDO); clicar numa Região usa realizadas (filtro por data de
   // ENTREGA) — é a mesma base que a tabela de Entregas por Região contou, senão os números não batem.
   let baseTabela = pedidos;
-  if(filtroSoPendentes) baseTabela = pedidos.filter(p => !p.efetivo);
+  if(buscaCliente) baseTabela = filtrarPorCliente(buscaCliente);
+  else if(filtroSoPendentes) baseTabela = pedidos.filter(ehPendenteConfiavel);
   else if(filtroRegiao) baseTabela = realizadas.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao);
 
   $('#entrega-body').innerHTML = renderStatsNovos(realizadas, pendentesQtd) + renderEvolucao() + renderRegiao(realizadas) + renderTabela(baseTabela);
@@ -444,7 +498,7 @@ window.addEventListener('beforeprint', syncPrintPageStyle);
 document.addEventListener('click', e => {
   const linhaRegiao = e.target.closest('[data-regiao]');
   if(linhaRegiao){
-    filtroSoPendentes = false;
+    filtroSoPendentes = false; buscaCliente = ''; const inp1 = $('#busca-cliente'); if(inp1) inp1.value = '';
     filtroRegiao = linhaRegiao.dataset.regiao;
     renderEntrega();
     $('#tabela-completa')?.scrollIntoView({behavior:'smooth', block:'start'});
@@ -452,11 +506,17 @@ document.addEventListener('click', e => {
   }
   const cardPendentes = e.target.closest('[data-goto-pendentes]');
   if(cardPendentes){
-    filtroRegiao = null;
+    filtroRegiao = null; buscaCliente = ''; const inp2 = $('#busca-cliente'); if(inp2) inp2.value = '';
     filtroSoPendentes = true;
     renderEntrega();
     $('#tabela-completa')?.scrollIntoView({behavior:'smooth', block:'start'});
   }
+});
+
+$('#busca-cliente').addEventListener('input', e => {
+  buscaCliente = e.target.value.trim();
+  if(buscaCliente){ filtroRegiao = null; filtroSoPendentes = false; }
+  renderEntrega();
 });
 
 async function load(){
