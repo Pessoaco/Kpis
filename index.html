@@ -16,6 +16,8 @@
     --ground:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-soft:#52514e; --ink-faint:#898781; --hair:#e1e0d9; --axis:#c3c2b7;
     --series-previsto:#2a78d6; --series-efetivo:#eb6834;
     --good:#0ca30c; --critical:#d03b3b;
+    --good-bg:#e9f7e9; --good-edge:#9bd89b;
+    --critical-bg:#fbeaea; --critical-edge:#e9a3a3;
     --bnz-bg:#f7e9da; --bnz-ink:#8a4b23; --bnz-edge:#c98f52;
     --ciaplac-bg:#e3f0ef; --ciaplac-ink:#1f6f6f; --ciaplac-edge:#4fa39c;
     --shadow:0 1px 2px rgba(11,11,11,.05),0 4px 14px rgba(11,11,11,.045);
@@ -25,6 +27,8 @@
     --ground:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-soft:#c3c2b7; --ink-faint:#898781; --hair:#2c2c2a; --axis:#383835;
     --series-previsto:#3987e5; --series-efetivo:#d95926;
     --good:#0ca30c; --critical:#e66767;
+    --good-bg:#132414; --good-edge:#2c5c2e;
+    --critical-bg:#2c1414; --critical-edge:#6e2c2c;
     --bnz-bg:#2a1c0f; --bnz-ink:#e3ab6c; --bnz-edge:#8a5a2c;
     --ciaplac-bg:#0f2220; --ciaplac-ink:#7cc9c2; --ciaplac-edge:#2f6b64;
     --shadow:0 1px 2px rgba(0,0,0,.32),0 5px 16px rgba(0,0,0,.26);
@@ -33,6 +37,8 @@
     --ground:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-soft:#c3c2b7; --ink-faint:#898781; --hair:#2c2c2a; --axis:#383835;
     --series-previsto:#3987e5; --series-efetivo:#d95926;
     --good:#0ca30c; --critical:#e66767;
+    --good-bg:#132414; --good-edge:#2c5c2e;
+    --critical-bg:#2c1414; --critical-edge:#6e2c2c;
     --bnz-bg:#2a1c0f; --bnz-ink:#e3ab6c; --bnz-edge:#8a5a2c;
     --ciaplac-bg:#0f2220; --ciaplac-ink:#7cc9c2; --ciaplac-edge:#2f6b64;
     --shadow:0 1px 2px rgba(0,0,0,.32),0 5px 16px rgba(0,0,0,.26);
@@ -40,7 +46,7 @@
   *{box-sizing:border-box}
   [hidden]{display:none!important}
   body{margin:0;background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;line-height:1.48;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1080px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 14px 60px}
+  .wrap{max-width:1280px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 14px 60px}
 
   .masthead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;padding-bottom:8px;border-bottom:3px solid var(--ink)}
   .masthead h1{font-family:"Archivo",sans-serif;font-weight:700;font-size:clamp(1.05rem,4vw,1.5rem);letter-spacing:-.01em;margin:0}
@@ -50,7 +56,6 @@
 
   section.card{margin-top:20px;background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
   .card h2{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.05rem;margin:0 0 3px}
-  .card .sub{font-size:.8rem;color:var(--ink-soft);margin:0 0 14px}
 
   .controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:16px}
   .seg{display:inline-flex;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--surface)}
@@ -62,12 +67,22 @@
   .statusbar{font-size:.72rem;color:var(--ink-faint);margin-left:auto}
 
   .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
-  .stat{border:1px solid var(--hair);border-radius:8px;padding:11px 12px;display:flex;flex-direction:column;gap:3px}
+  .stat{position:relative;border:1px solid var(--hair);border-radius:8px;padding:11px 12px;display:flex;flex-direction:column;gap:3px}
+  .stat.critical,.stat.good{padding-top:28px}
+  .stat.critical{background:var(--critical-bg);border-color:var(--critical-edge)}
+  .stat.good{background:var(--good-bg);border-color:var(--good-edge)}
   .stat .k{font-family:"Archivo",sans-serif;font-weight:600;font-size:.63rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
   .stat .v{font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:1.6rem;color:var(--ink);font-variant-numeric:tabular-nums}
   .stat.critical .v{color:var(--critical)}
   .stat.good .v{color:var(--good)}
   .stat .note{font-size:.68rem;color:var(--ink-faint)}
+  .stat-badge{position:absolute;top:9px;right:10px;font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:.66rem;padding:2px 8px;border-radius:999px;color:#fff}
+  .stat.critical .stat-badge{background:var(--critical)}
+  .stat.good .stat-badge{background:var(--good)}
+  .stat-bar{height:4px;border-radius:3px;background:var(--hair);overflow:hidden;margin-top:3px}
+  .stat-bar>span{display:block;height:100%;border-radius:3px}
+  .stat.critical .stat-bar>span{background:var(--critical)}
+  .stat.good .stat-bar>span{background:var(--good)}
 
   .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.74rem;color:var(--ink-soft);margin-bottom:6px}
   .legend span{display:inline-flex;align-items:center;gap:6px}
@@ -78,13 +93,11 @@
   .grid-line{stroke:var(--hair);stroke-width:1}
   .axis-line{stroke:var(--axis);stroke-width:1}
   .axis-label{fill:var(--ink-faint);font-size:10px;font-family:"IBM Plex Sans",sans-serif}
-  .zero-line{stroke:var(--ink-soft);stroke-width:2}
-  .bar-late{fill:var(--critical)}
-  .bar-ok{fill:var(--good)}
-  .bar-extreme-label{font-size:11px;font-weight:700;font-family:"IBM Plex Mono",monospace;fill:var(--critical)}
-  .linha-evolucao{fill:none;stroke:var(--series-previsto);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-  .area-evolucao{fill:var(--series-previsto);opacity:.1;stroke:none}
-  .dot-evolucao{fill:var(--series-previsto);stroke:var(--surface);stroke-width:2}
+  .linha-evolucao{fill:none;stroke:var(--good);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  .area-evolucao{fill:var(--good);opacity:.1;stroke:none}
+  .dot-evolucao{fill:var(--good);stroke:var(--surface);stroke-width:2}
+  .linha-evolucao-atraso{fill:none;stroke:var(--critical);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  .dot-evolucao-atraso{fill:var(--critical);stroke:var(--surface);stroke-width:2}
 
   .tabela-titulo{font-family:"Archivo",sans-serif;font-weight:600;font-size:.78rem;color:var(--ink-soft);margin:22px 0 8px}
   .linha-clicavel{cursor:pointer}
@@ -92,8 +105,8 @@
   .chip-filtro{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-weight:600;font-size:.7rem;background:var(--blue-bg,#e9f0f3);color:var(--series-previsto);padding:2px 9px;border-radius:12px}
   .chip-filtro button{font:inherit;font-size:.68rem;border:0;background:none;color:inherit;cursor:pointer;padding:0;text-decoration:underline}
   .tabela-wrap{overflow-x:auto;border:1px solid var(--hair);border-radius:8px}
-  table.tabela-entrega{border-collapse:collapse;width:100%;font-size:.76rem}
-  table.tabela-entrega th,table.tabela-entrega td{text-align:left;padding:6px 10px;border-top:1px solid var(--hair);white-space:nowrap}
+  table.tabela-entrega{border-collapse:collapse;width:100%;font-size:.71rem}
+  table.tabela-entrega th,table.tabela-entrega td{text-align:left;padding:5px 8px;border-top:1px solid var(--hair);white-space:nowrap}
   table.tabela-entrega th{font-family:"Archivo",sans-serif;font-size:.66rem;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-faint);background:var(--surface);position:sticky;top:0;border-top:0}
   table.tabela-entrega td:first-child{color:var(--ink);font-weight:500}
   table.tabela-entrega tbody tr:hover{background:var(--ground)}
@@ -108,7 +121,22 @@
   @media (max-width:700px){
     .stat-row{grid-template-columns:1fr}
   }
+
+  @media print{
+    @page{
+      size:A4 portrait; margin:9mm;
+      @bottom-right{ content:"página " counter(page) " de " counter(pages); font-family:Arial,sans-serif; font-size:8px; color:#888; }
+    }
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    :root{--shadow:none}
+    body{background:#fff;font-size:10.5px}
+    .wrap{max-width:100%;padding:0}
+    .controls,.tagline{display:none!important}
+    section.card{box-shadow:none;border:1px solid #ccc}
+    .chip-filtro button{display:none}
+  }
 </style>
+<style id="print-page-style"></style>
 </head>
 <body>
 
@@ -120,9 +148,6 @@
   <p class="tagline">Indicadores ao vivo, direto da Odoo — página cresce conforme novos indicadores forem adicionados.</p>
 
   <section class="card" id="card-entrega">
-    <h2>Indicador de Entregas — Prazo x Real</h2>
-    <p class="sub">Previsto = data do pedido + prazo prometido pela fábrica (dias úteis, varia por empresa). Efetivo = data de conclusão da entrega (<code>effective_date</code>).</p>
-
     <div class="controls">
       <div class="seg empresa" id="seg-empresa">
         <button data-emp="CIAPLAC" class="on">CIAPLAC</button>
@@ -137,6 +162,7 @@
       </div>
       <div class="statusbar" id="statusbar">carregando…</div>
     </div>
+    <h2>Indicador de Entregas — Prazo x Real</h2>
 
     <div id="entrega-body">
       <div class="loading" id="entrega-loading">carregando indicador…</div>
@@ -217,33 +243,40 @@ function filtrarPedidos(){
 }
 
 function renderStatsNovos(realizadas, pendentesQtd){
+  const total = realizadas.length;
   const noPrazo = realizadas.filter(p => p.atraso_dias <= 0);
   const foraPrazo = realizadas.filter(p => p.atraso_dias > 0);
+  const pctNoPrazo = total ? Math.round(100*noPrazo.length/total) : 0;
+  const pctForaPrazo = total ? Math.round(100*foraPrazo.length/total) : 0;
   // Atraso médio (não "tempo médio de entrega") de propósito: um tempo médio bruto de entrega
   // fica parecido com o próprio prazo prometido e passa a falsa impressão de "tá tudo bem" mesmo
   // quando a maioria atrasa (dias em cima do atraso de cada um cancelam com os adiantados).
-  const atrasoMedio = realizadas.length ? realizadas.reduce((s,p) => s + p.atraso_dias, 0) / realizadas.length : 0;
+  const atrasoMedio = total ? realizadas.reduce((s,p) => s + p.atraso_dias, 0) / total : 0;
   // SLA prometido: só mostra o número quando dá pra identificar uma empresa específica
   // (Total mistura BNZ=3d com CIAPLAC=15d, não faz sentido citar um número só)
-  const slaTxt = empresa && realizadas.length ? `em até ${realizadas[0].sla_dias} dias úteis` : 'dentro do prazo prometido pela fábrica';
-  const foraTxt = empresa && realizadas.length ? `Passaram de ${realizadas[0].sla_dias} dias úteis` : 'Passaram do prazo prometido pela fábrica';
+  const slaTxt = empresa && total ? `em até ${realizadas[0].sla_dias} dias úteis` : 'dentro do prazo prometido pela fábrica';
+  const foraTxt = empresa && total ? `Passaram de ${realizadas[0].sla_dias} dias úteis` : 'Passaram do prazo prometido pela fábrica';
 
   return `
     <div class="stat-row">
       <div class="stat">
         <span class="k">Entregas ${PERIODO_LABEL[periodo]}</span>
-        <span class="v">${realizadas.length}</span>
+        <span class="v">${total}</span>
         <span class="note">Concluídas (data de entrega dentro do período)</span>
       </div>
-      <div class="stat good">
-        <span class="k">No Prazo</span>
-        <span class="v">${noPrazo.length}</span>
-        <span class="note">Entregues ${slaTxt}</span>
-      </div>
       <div class="stat ${foraPrazo.length?'critical':''}">
+        ${total?`<span class="stat-badge">${pctForaPrazo}%</span>`:''}
         <span class="k">Fora do Prazo</span>
         <span class="v">${foraPrazo.length}</span>
         <span class="note">${foraTxt}</span>
+        ${total?`<div class="stat-bar"><span style="width:${pctForaPrazo}%"></span></div>`:''}
+      </div>
+      <div class="stat good">
+        ${total?`<span class="stat-badge">${pctNoPrazo}%</span>`:''}
+        <span class="k">No Prazo</span>
+        <span class="v">${noPrazo.length}</span>
+        <span class="note">Entregues ${slaTxt}</span>
+        ${total?`<div class="stat-bar"><span style="width:${pctNoPrazo}%"></span></div>`:''}
       </div>
       <div class="stat ${atrasoMedio>0?'critical':''}">
         <span class="k">Atraso Médio</span>
@@ -291,7 +324,8 @@ function renderEvolucao(){
   });
   const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const pontos = porMes.map((m,i) => ({mes:MESES[i], pct: m.total ? Math.round(100*m.noPrazo/m.total) : null, total:m.total}))
-    .filter(p => p.pct != null);
+    .filter(p => p.pct != null)
+    .map(p => ({...p, pctFora: 100-p.pct}));
 
   if(pontos.length < 2) return `<p class="tabela-titulo">Evolução da Performance de Entrega — ${ano}</p><div class="empty-msg">Ainda não há meses suficientes com entregas concluídas em ${ano}.</div>`;
 
@@ -312,18 +346,27 @@ function renderEvolucao(){
   const linhaPts = pontos.map((p,i) => `${xFor(i).toFixed(1)},${yFor(p.pct).toFixed(1)}`);
   const linha = 'M'+linhaPts.join(' L');
   const area = `M${xFor(0).toFixed(1)},${yFor(0).toFixed(1)} L${linhaPts.join(' L')} L${xFor(pontos.length-1).toFixed(1)},${yFor(0).toFixed(1)} Z`;
+  const linhaForaPts = pontos.map((p,i) => `${xFor(i).toFixed(1)},${yFor(p.pctFora).toFixed(1)}`);
+  const linhaFora = 'M'+linhaForaPts.join(' L');
 
   let dotsSvg = pontos.map((p,i) => `<circle class="dot-evolucao" cx="${xFor(i).toFixed(1)}" cy="${yFor(p.pct).toFixed(1)}" r="4"></circle>`).join('');
+  let dotsForaSvg = pontos.map((p,i) => `<circle class="dot-evolucao-atraso" cx="${xFor(i).toFixed(1)}" cy="${yFor(p.pctFora).toFixed(1)}" r="4"></circle>`).join('');
   let labelsSvg = pontos.map((p,i) => `<text class="axis-label" x="${xFor(i)}" y="${(yFor(p.pct)-10).toFixed(1)}" text-anchor="middle" style="font-weight:700">${p.pct}%</text>`).join('');
 
   return `
-    <p class="tabela-titulo">Evolução da Performance de Entrega — ${ano} (% entregue dentro do prazo, por mês)</p>
+    <p class="tabela-titulo">Evolução da Performance de Entrega — ${ano} (% de entregas por mês, no prazo x fora do prazo)</p>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--good)"></span>No Prazo</span>
+      <span><span class="dot" style="background:var(--critical)"></span>Fora do Prazo</span>
+    </div>
     <div class="chart-wrap">
       <svg class="chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
         ${gridSvg}
         <path class="area-evolucao" d="${area}"/>
         <path class="linha-evolucao" d="${linha}"/>
+        <path class="linha-evolucao-atraso" d="${linhaFora}"/>
         ${dotsSvg}
+        ${dotsForaSvg}
         ${labelsSvg}
         ${xLabelsSvg}
       </svg>
@@ -351,18 +394,18 @@ function renderTabela(pedidos){
       <td>${p.cliente||'—'}</td>
       <td>${p.fantasia||'—'}</td>
       <td>${p.regiao||'—'}</td>
+      <td>${p.efetivo ? fmtDateBR(p.efetivo) : '<span class="pendente">—</span>'}</td>
+      <td class="num">${atrasoTxt}</td>
       <td>${p.pedido||'—'}</td>
       <td>${fmtDateBR(p.data_pedido)}</td>
       <td>${fmtDateBR(p.previsto)}</td>
-      <td>${p.efetivo ? fmtDateBR(p.efetivo) : '<span class="pendente">—</span>'}</td>
-      <td class="num">${atrasoTxt}</td>
     </tr>`;
   }).join('');
   return `
     <p class="tabela-titulo" id="tabela-completa">Lista completa (${pedidos.length} pedidos) ${chipFiltro}</p>
     <div class="tabela-wrap">
       <table class="tabela-entrega">
-        <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Região</th><th>Pedido</th><th>Data Pedido</th><th>Previsto</th><th>Efetivo</th><th>Atraso</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Região</th><th>Efetivo</th><th>Atraso</th><th>Pedido</th><th>Data Pedido</th><th>Previsto</th></tr></thead>
         <tbody>${linhas}</tbody>
       </table>
     </div>`;
@@ -380,8 +423,21 @@ function renderEntrega(){
   if(filtroSoPendentes) baseTabela = pedidos.filter(p => !p.efetivo);
   else if(filtroRegiao) baseTabela = realizadas.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao);
 
-  $('#entrega-body').innerHTML = renderStatsNovos(realizadas, pendentesQtd) + renderRegiao(realizadas) + renderEvolucao() + renderTabela(baseTabela);
+  $('#entrega-body').innerHTML = renderStatsNovos(realizadas, pendentesQtd) + renderEvolucao() + renderRegiao(realizadas) + renderTabela(baseTabela);
+  syncPrintPageStyle();
 }
+
+// injeta empresa/período/data direto na margem nativa da página impressa (repete em toda página) —
+// position:fixed não é confiável no motor de PDF do Chrome, mas @page @top-left sim (mesmo padrão do Copiloto).
+function syncPrintPageStyle(){
+  const empLabel = empresa === 'BNZ METAIS' ? 'BNZ METAIS' : (empresa === 'CIAPLAC' ? 'CIAPLAC' : 'BNZ + CIAPLAC (Total)');
+  const perLabel = PERIODO_LABEL[periodo] || '';
+  const dataTxt = $('#updated-at')?.textContent || '';
+  const texto = ('Indicador de Entregas · '+empLabel+' · '+perLabel+(dataTxt && dataTxt!=='—' ? ' · atualizado '+dataTxt : '')).replace(/"/g,'\\"');
+  const el = $('#print-page-style');
+  if(el) el.textContent = '@media print{ @page{ @top-left{ content:"'+texto+'"; font-family:Arial,sans-serif; font-size:8px; color:#888; } } }';
+}
+window.addEventListener('beforeprint', syncPrintPageStyle);
 
 // Delegação de clique: região (na tabela "Entregas por Região") e o card "Pedidos Pendentes"
 // filtram a Lista completa e rolam até ela — o filtro fica até a Leidi limpar ou trocar empresa/período.
