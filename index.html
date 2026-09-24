@@ -87,6 +87,10 @@
   .dot-evolucao{fill:var(--series-previsto);stroke:var(--surface);stroke-width:2}
 
   .tabela-titulo{font-family:"Archivo",sans-serif;font-weight:600;font-size:.78rem;color:var(--ink-soft);margin:22px 0 8px}
+  .linha-clicavel{cursor:pointer}
+  .linha-clicavel:hover{background:var(--ground)}
+  .chip-filtro{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-weight:600;font-size:.7rem;background:var(--blue-bg,#e9f0f3);color:var(--series-previsto);padding:2px 9px;border-radius:12px}
+  .chip-filtro button{font:inherit;font-size:.68rem;border:0;background:none;color:inherit;cursor:pointer;padding:0;text-decoration:underline}
   .tabela-wrap{overflow-x:auto;border:1px solid var(--hair);border-radius:8px}
   table.tabela-entrega{border-collapse:collapse;width:100%;font-size:.76rem}
   table.tabela-entrega th,table.tabela-entrega td{text-align:left;padding:6px 10px;border-top:1px solid var(--hair);white-space:nowrap}
@@ -161,6 +165,14 @@ function fmtDateBR(s){
 let TODOS_PEDIDOS = [];
 let empresa = 'CIAPLAC';
 let periodo = 'mes';
+let filtroRegiao = null;
+let filtroSoPendentes = false;
+
+function limparFiltroTabela(){
+  filtroRegiao = null;
+  filtroSoPendentes = false;
+  renderEntrega();
+}
 
 const PERIODO_LABEL = { mes:'no Mês Atual', '3':'nos Últimos 3 Meses', '6':'nos Últimos 6 Meses', '12':'nos Últimos 12 Meses' };
 
@@ -207,9 +219,10 @@ function filtrarPedidos(){
 function renderStatsNovos(realizadas, pendentesQtd){
   const noPrazo = realizadas.filter(p => p.atraso_dias <= 0);
   const foraPrazo = realizadas.filter(p => p.atraso_dias > 0);
-  const tempoMedio = realizadas.length
-    ? realizadas.reduce((s,p) => s + businessDaysBetween(parseISOLocal(p.data_pedido), parseISOLocal(p.efetivo)), 0) / realizadas.length
-    : 0;
+  // Atraso médio (não "tempo médio de entrega") de propósito: um tempo médio bruto de entrega
+  // fica parecido com o próprio prazo prometido e passa a falsa impressão de "tá tudo bem" mesmo
+  // quando a maioria atrasa (dias em cima do atraso de cada um cancelam com os adiantados).
+  const atrasoMedio = realizadas.length ? realizadas.reduce((s,p) => s + p.atraso_dias, 0) / realizadas.length : 0;
   // SLA prometido: só mostra o número quando dá pra identificar uma empresa específica
   // (Total mistura BNZ=3d com CIAPLAC=15d, não faz sentido citar um número só)
   const slaTxt = empresa && realizadas.length ? `em até ${realizadas[0].sla_dias} dias úteis` : 'dentro do prazo prometido pela fábrica';
@@ -222,11 +235,6 @@ function renderStatsNovos(realizadas, pendentesQtd){
         <span class="v">${realizadas.length}</span>
         <span class="note">Concluídas (data de entrega dentro do período)</span>
       </div>
-      <div class="stat">
-        <span class="k">Pedidos Pendentes</span>
-        <span class="v">${pendentesQtd}</span>
-        <span class="note">Pedidos feitos ${PERIODO_LABEL[periodo]} que ainda não foram entregues</span>
-      </div>
       <div class="stat good">
         <span class="k">No Prazo</span>
         <span class="v">${noPrazo.length}</span>
@@ -237,10 +245,15 @@ function renderStatsNovos(realizadas, pendentesQtd){
         <span class="v">${foraPrazo.length}</span>
         <span class="note">${foraTxt}</span>
       </div>
-      <div class="stat">
-        <span class="k">Tempo Médio de Entrega</span>
-        <span class="v">${tempoMedio.toFixed(1)}d</span>
-        <span class="note">Dias úteis, do pedido até a entrega</span>
+      <div class="stat ${atrasoMedio>0?'critical':''}">
+        <span class="k">Atraso Médio</span>
+        <span class="v">${atrasoMedio>=0?'+':''}${atrasoMedio.toFixed(1)}d</span>
+        <span class="note">Em relação ao prazo prometido pela fábrica</span>
+      </div>
+      <div class="stat" data-goto-pendentes style="cursor:pointer">
+        <span class="k">Pedidos Pendentes</span>
+        <span class="v">${pendentesQtd}</span>
+        <span class="note">Feitos ${PERIODO_LABEL[periodo]}, ainda não entregues · <span style="color:var(--series-previsto);font-weight:600">toque para ver ↗</span></span>
       </div>
     </div>`;
 }
@@ -254,11 +267,11 @@ function renderRegiao(realizadas){
   const linhas = Object.entries(porRegiao).sort((a,b) => b[1]-a[1]);
   if(!linhas.length) return '';
   return `
-    <p class="tabela-titulo">Entregas por Região</p>
+    <p class="tabela-titulo">Entregas por Região <span style="font-weight:400;color:var(--ink-faint);text-transform:none;letter-spacing:0">(toque numa região pra ver os clientes)</span></p>
     <div class="tabela-wrap">
       <table class="tabela-entrega">
         <thead><tr><th>Região</th><th class="num">Total</th></tr></thead>
-        <tbody>${linhas.map(([r,n]) => `<tr><td>${r}</td><td class="num">${n}</td></tr>`).join('')}</tbody>
+        <tbody>${linhas.map(([r,n]) => `<tr class="linha-clicavel" data-regiao="${r}"><td>${r}</td><td class="num">${n}</td></tr>`).join('')}</tbody>
       </table>
     </div>`;
 }
@@ -318,7 +331,15 @@ function renderEvolucao(){
 }
 
 function renderTabela(pedidos){
-  if(!pedidos.length) return '';
+
+  let chipFiltro = '';
+  if(filtroSoPendentes || filtroRegiao){
+    const txt = filtroSoPendentes ? 'Só pedidos pendentes' : `Região: ${filtroRegiao}`;
+    chipFiltro = `<span class="chip-filtro">${txt} <button onclick="limparFiltroTabela()">✕ limpar</button></span>`;
+  }
+
+  if(!pedidos.length) return `<p class="tabela-titulo" id="tabela-completa">Lista completa ${chipFiltro}</p><div class="empty-msg">Nenhum pedido encontrado com esse filtro.</div>`;
+
   const linhas = pedidos.map(p => {
     let atrasoTxt = '<span class="pendente">pendente</span>';
     if(p.efetivo != null && p.atraso_dias != null){
@@ -328,6 +349,8 @@ function renderTabela(pedidos){
     }
     return `<tr>
       <td>${p.cliente||'—'}</td>
+      <td>${p.fantasia||'—'}</td>
+      <td>${p.regiao||'—'}</td>
       <td>${p.pedido||'—'}</td>
       <td>${fmtDateBR(p.data_pedido)}</td>
       <td>${fmtDateBR(p.previsto)}</td>
@@ -336,10 +359,10 @@ function renderTabela(pedidos){
     </tr>`;
   }).join('');
   return `
-    <p class="tabela-titulo">Lista completa (${pedidos.length} pedidos) — mesmos dados do gráfico, em tabela</p>
+    <p class="tabela-titulo" id="tabela-completa">Lista completa (${pedidos.length} pedidos) ${chipFiltro}</p>
     <div class="tabela-wrap">
       <table class="tabela-entrega">
-        <thead><tr><th>Cliente</th><th>Pedido</th><th>Data Pedido</th><th>Previsto</th><th>Efetivo</th><th>Atraso</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Região</th><th>Pedido</th><th>Data Pedido</th><th>Previsto</th><th>Efetivo</th><th>Atraso</th></tr></thead>
         <tbody>${linhas}</tbody>
       </table>
     </div>`;
@@ -349,8 +372,36 @@ function renderEntrega(){
   const pedidos = filtrarPedidos();
   const realizadas = filtrarEntregasRealizadas();
   const pendentesQtd = pedidos.filter(p => !p.efetivo).length;
-  $('#entrega-body').innerHTML = renderStatsNovos(realizadas, pendentesQtd) + renderRegiao(realizadas) + renderEvolucao() + renderTabela(pedidos);
+
+  // A tabela troca de BASE conforme o filtro clicado: "Pedidos Pendentes" e a Lista padrão usam
+  // pedidos (filtro por data do PEDIDO); clicar numa Região usa realizadas (filtro por data de
+  // ENTREGA) — é a mesma base que a tabela de Entregas por Região contou, senão os números não batem.
+  let baseTabela = pedidos;
+  if(filtroSoPendentes) baseTabela = pedidos.filter(p => !p.efetivo);
+  else if(filtroRegiao) baseTabela = realizadas.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao);
+
+  $('#entrega-body').innerHTML = renderStatsNovos(realizadas, pendentesQtd) + renderRegiao(realizadas) + renderEvolucao() + renderTabela(baseTabela);
 }
+
+// Delegação de clique: região (na tabela "Entregas por Região") e o card "Pedidos Pendentes"
+// filtram a Lista completa e rolam até ela — o filtro fica até a Leidi limpar ou trocar empresa/período.
+document.addEventListener('click', e => {
+  const linhaRegiao = e.target.closest('[data-regiao]');
+  if(linhaRegiao){
+    filtroSoPendentes = false;
+    filtroRegiao = linhaRegiao.dataset.regiao;
+    renderEntrega();
+    $('#tabela-completa')?.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+  const cardPendentes = e.target.closest('[data-goto-pendentes]');
+  if(cardPendentes){
+    filtroRegiao = null;
+    filtroSoPendentes = true;
+    renderEntrega();
+    $('#tabela-completa')?.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+});
 
 async function load(){
   $('#statusbar').textContent = 'atualizando…';
@@ -373,12 +424,14 @@ async function load(){
 $('#seg-empresa').addEventListener('click', e => {
   const b = e.target.closest('button[data-emp]'); if(!b) return;
   empresa = b.dataset.emp;
+  filtroRegiao = null; filtroSoPendentes = false;
   $$('#seg-empresa button').forEach(x => x.classList.toggle('on', x===b));
   renderEntrega();
 });
 $('#seg-periodo').addEventListener('click', e => {
   const b = e.target.closest('button[data-per]'); if(!b) return;
   periodo = b.dataset.per;
+  filtroRegiao = null; filtroSoPendentes = false;
   $$('#seg-periodo button').forEach(x => x.classList.toggle('on', x===b));
   renderEntrega();
 });
