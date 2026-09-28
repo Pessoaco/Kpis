@@ -238,14 +238,17 @@ function filtrarPorCliente(termo){
 
 function renderResumoCliente(lista){
   const comEfetivo = lista.filter(p => p.efetivo);
-  const noPrazo = comEfetivo.filter(p => p.atraso_dias <= 0).length;
+  const atrasados = comEfetivo.filter(p => p.atraso_dias > 0);
+  const noPrazo = comEfetivo.length - atrasados.length;
   const pendentes = lista.length - comEfetivo.length;
-  const atrasoMedio = comEfetivo.length ? comEfetivo.reduce((s,p) => s + p.atraso_dias, 0) / comEfetivo.length : null;
+  // Atraso médio = só entre quem atrasou de verdade — cada entrega é um evento isolado, não dá pra
+  // misturar com quem chegou adiantado (senão um atraso grave fica escondido pela média).
+  const atrasoMedio = atrasados.length ? atrasados.reduce((s,p) => s + p.atraso_dias, 0) / atrasados.length : null;
   const pct = comEfetivo.length ? Math.round(100*noPrazo/comEfetivo.length) : null;
   return `<div class="resumo-cliente">
     <span>${lista.length} pedido(s) encontrado(s)</span>
-    ${pct!=null?`<span class="${pct>=80?'good':'critical'}">${pct}% no prazo</span>`:''}
-    ${atrasoMedio!=null?`<span class="${atrasoMedio>0?'critical':'good'}">Atraso médio: ${atrasoMedio>0?'+':''}${Math.round(atrasoMedio)||0}d</span>`:''}
+    ${pct!=null?`<span class="good">${pct}% no prazo</span><span class="critical">${100-pct}% atrasado</span>`:''}
+    ${atrasoMedio!=null?`<span class="critical">Atraso médio: +${Math.round(atrasoMedio)}d (${atrasados.length})</span>`:''}
     ${pendentes?`<span>${pendentes} ainda sem entrega</span>`:''}
   </div>`;
 }
@@ -318,10 +321,10 @@ function renderStatsNovos(realizadas, pendentesQtd){
   const foraPrazo = realizadas.filter(p => p.atraso_dias > 0);
   const pctNoPrazo = total ? Math.round(100*noPrazo.length/total) : 0;
   const pctForaPrazo = total ? Math.round(100*foraPrazo.length/total) : 0;
-  // Atraso médio (não "tempo médio de entrega") de propósito: um tempo médio bruto de entrega
-  // fica parecido com o próprio prazo prometido e passa a falsa impressão de "tá tudo bem" mesmo
-  // quando a maioria atrasa (dias em cima do atraso de cada um cancelam com os adiantados).
-  const atrasoMedio = total ? realizadas.reduce((s,p) => s + p.atraso_dias, 0) / total : 0;
+  // Atraso médio = média só de QUEM ATRASOU (atraso_dias > 0), não mistura com quem chegou adiantado.
+  // Cada entrega é um evento isolado pro cliente — misturar os dois faria um atraso grave (+19d)
+  // ser "escondido" por vários adiantamentos, dando a falsa impressão de que tá tudo bem.
+  const atrasoMedio = foraPrazo.length ? foraPrazo.reduce((s,p) => s + p.atraso_dias, 0) / foraPrazo.length : 0;
   // SLA prometido: só mostra o número quando dá pra identificar uma empresa específica
   // (Total mistura BNZ=3d com CIAPLAC=15d, não faz sentido citar um número só)
   const slaTxt = empresa && total ? `em até ${realizadas[0].sla_dias} dias úteis` : 'dentro do prazo prometido pela fábrica';
@@ -351,7 +354,7 @@ function renderStatsNovos(realizadas, pendentesQtd){
       <div class="stat ${atrasoMedio>0?'critical':''}">
         <span class="k">Atraso Médio</span>
         <span class="v">${atrasoMedio>0?'+':''}${Math.round(atrasoMedio)||0}d</span>
-        <span class="note">Em relação ao prazo prometido pela fábrica</span>
+        <span class="note">Só entre os que atrasaram (${foraPrazo.length} pedido${foraPrazo.length===1?'':'s'})</span>
       </div>
       <div class="stat" data-goto-pendentes style="cursor:pointer">
         <span class="k">Pedidos Pendentes</span>
@@ -362,19 +365,30 @@ function renderStatsNovos(realizadas, pendentesQtd){
 }
 
 function renderRegiao(realizadas){
+  // Não é só quantidade — ela quer comparar PERFORMANCE entre regiões (ex: Campinas x Marília),
+  // então cada região traz também % no prazo e o atraso médio (só entre quem atrasou, mesmo critério
+  // do card principal — não mistura com quem chegou adiantado).
   const porRegiao = {};
   realizadas.forEach(p => {
     const r = p.regiao || 'Sem região cadastrada';
-    porRegiao[r] = (porRegiao[r]||0) + 1;
+    if(!porRegiao[r]) porRegiao[r] = { total:0, noPrazo:0, somaAtraso:0, qtdAtrasado:0 };
+    const d = porRegiao[r];
+    d.total++;
+    if(p.atraso_dias > 0){ d.somaAtraso += p.atraso_dias; d.qtdAtrasado++; }
+    else d.noPrazo++;
   });
-  const linhas = Object.entries(porRegiao).sort((a,b) => b[1]-a[1]);
+  const linhas = Object.entries(porRegiao).sort((a,b) => b[1].total-a[1].total);
   if(!linhas.length) return '';
   return `
     <p class="tabela-titulo">Entregas por Região <span style="font-weight:400;color:var(--ink-faint);text-transform:none;letter-spacing:0">(toque numa região pra ver os clientes)</span></p>
     <div class="tabela-wrap regiao-resumo">
       <table class="tabela-entrega">
-        <thead><tr><th>Região</th><th class="num">Total</th></tr></thead>
-        <tbody>${linhas.map(([r,n]) => `<tr class="linha-clicavel" data-regiao="${r}"><td>${r}</td><td class="num">${n}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>Região</th><th class="num">Total</th><th class="num">% No Prazo</th><th class="num">Atraso Médio</th></tr></thead>
+        <tbody>${linhas.map(([r,d]) => {
+          const pct = Math.round(100*d.noPrazo/d.total);
+          const atrasoTxt = d.qtdAtrasado ? `<span class="atraso-late">+${Math.round(d.somaAtraso/d.qtdAtrasado)}d</span>` : '<span class="atraso-ok">—</span>';
+          return `<tr class="linha-clicavel" data-regiao="${r}"><td>${r}</td><td class="num">${d.total}</td><td class="num">${pct}%</td><td class="num">${atrasoTxt}</td></tr>`;
+        }).join('')}</tbody>
       </table>
     </div>`;
 }
