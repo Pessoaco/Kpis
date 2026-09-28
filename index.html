@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Painel Diretoria</title>
+<title>Indicadores - Prazo de Entrega</title>
 <meta name="theme-color" content="#0b0b0b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232a78d6'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white' font-family='Arial'%3EP%3C/text%3E%3C/svg%3E">
 
@@ -160,7 +160,7 @@
 
 <div class="wrap">
   <header class="masthead">
-    <h1>Painel Diretoria <span>— Indicadores</span></h1>
+    <h1>Indicadores <span>— Prazo de Entrega</span></h1>
     <div class="meta" id="hoje">—</div>
   </header>
   <p class="tagline">Indicadores ao vivo, direto da Odoo — página cresce conforme novos indicadores forem adicionados.</p>
@@ -188,7 +188,7 @@
     </div>
   </section>
 
-  <p class="updated">Painel Diretoria · atualizado em <span id="updated-at">—</span></p>
+  <p class="updated">Indicadores - Prazo de Entrega · atualizado em <span id="updated-at">—</span></p>
 </div>
 
 <script>
@@ -441,6 +441,8 @@ function renderTabela(pedidos){
     return `<tr>
       <td>${p.cliente||'—'}</td>
       <td>${p.fantasia||'—'}</td>
+      <td>${p.cidade||'—'}</td>
+      <td>${p.estado||'—'}</td>
       <td>${p.regiao||'—'}</td>
       <td>${p.efetivo ? fmtDateBR(p.efetivo) : '<span class="pendente">—</span>'}</td>
       <td class="num">${atrasoTxt}</td>
@@ -454,7 +456,7 @@ function renderTabela(pedidos){
     ${resumo}
     <div class="tabela-wrap">
       <table class="tabela-entrega">
-        <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Região</th><th>Efetivo</th><th>Atraso</th><th>Pedido</th><th>Data Pedido</th><th>Previsto</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>Estado</th><th>Região</th><th>Efetivo</th><th>Atraso</th><th>Pedido</th><th>Data Pedido</th><th>Previsto</th></tr></thead>
         <tbody>${linhas}</tbody>
       </table>
     </div>`;
@@ -499,7 +501,7 @@ function syncPrintPageStyle(){
   const empLabel = empresa === 'BNZ METAIS' ? 'BNZ METAIS' : (empresa === 'CIAPLAC' ? 'CIAPLAC' : 'BNZ + CIAPLAC (Total)');
   const perLabel = PERIODO_LABEL[periodo] || '';
   const dataTxt = $('#updated-at')?.textContent || '';
-  const cabecalho = ('Painel Diretoria · ' + empLabel + ' — ' + perLabel).replace(/"/g,'\\"');
+  const cabecalho = ('Indicadores - Prazo de Entrega · ' + empLabel + ' — ' + perLabel).replace(/"/g,'\\"');
   const rodape = (dataTxt && dataTxt!=='—' ? 'atualizado ' + dataTxt : '').replace(/"/g,'\\"');
   const el = $('#print-page-style');
   if(el) el.textContent = '@media print{ @page{ '
