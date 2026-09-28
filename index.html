@@ -105,6 +105,7 @@
   .dot-evolucao-atraso{fill:var(--critical);stroke:var(--surface);stroke-width:2}
 
   .tabela-titulo{font-family:"Archivo",sans-serif;font-weight:600;font-size:.78rem;color:var(--ink-soft);margin:22px 0 8px}
+  .regiao-wrap-print{display:none}
   .linha-clicavel{cursor:pointer}
   .linha-clicavel:hover{background:var(--ground)}
   .chip-filtro{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-weight:600;font-size:.7rem;background:var(--blue-bg,#e9f0f3);color:var(--series-previsto);padding:2px 9px;border-radius:12px}
@@ -152,6 +153,13 @@
     /* razão social completa do cliente toma espaço demais no papel — trunca com "..." só na impressão,
        pra sobrar largura pra nome fantasia/região/efetivo/atraso aparecerem inteiros */
     table.tabela-entrega td:first-child{max-width:80px;overflow:hidden;text-overflow:ellipsis}
+    /* "Entregas por Região" full-width e alta demais no papel — na impressão troca pra uma versão
+       compacta em 2 colunas, estreita e encostada perto de onde a coluna Região começa na tabela
+       de baixo (em vez de ocupar uma faixa inteira da página só pra essa lista) */
+    .regiao-wrap-tela{display:none}
+    .regiao-wrap-print{display:flex;gap:10px;margin:0 0 14px 42%;max-width:56%}
+    .regiao-wrap-print .tabela-wrap{flex:1;min-width:0}
+    .regiao-wrap-print table.tabela-entrega{font-size:.62rem}
   }
 </style>
 <style id="print-page-style"></style>
@@ -178,6 +186,7 @@
         <button data-per="6">Últ. 6 meses</button>
         <button data-per="12">Últ. 12 meses</button>
       </div>
+      <div class="seg meses" id="seg-meses"></div>
       <input type="text" id="busca-cliente" class="busca-cliente" placeholder="🔎 Buscar cliente…">
       <div class="statusbar" id="statusbar">carregando…</div>
     </div>
@@ -240,12 +249,23 @@ function renderResumoCliente(lista){
   return `<div class="resumo-cliente">
     <span>${lista.length} pedido(s) encontrado(s)</span>
     ${pct!=null?`<span class="${pct>=80?'good':'critical'}">${pct}% no prazo</span>`:''}
-    ${atrasoMedio!=null?`<span class="${atrasoMedio>0?'critical':'good'}">Atraso médio: ${atrasoMedio>=0?'+':''}${atrasoMedio.toFixed(1)}d</span>`:''}
+    ${atrasoMedio!=null?`<span class="${atrasoMedio>0?'critical':'good'}">Atraso médio: ${atrasoMedio>0?'+':''}${Math.round(atrasoMedio)||0}d</span>`:''}
     ${pendentes?`<span>${pendentes} ainda sem entrega</span>`:''}
   </div>`;
 }
 
 const PERIODO_LABEL = { mes:'no Mês Atual', '3':'nos Últimos 3 Meses', '6':'nos Últimos 6 Meses', '12':'nos Últimos 12 Meses' };
+const MESES_LABEL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+let mesesSelecionados = new Set();
+
+// Rótulo do período atual: se ela marcou meses específicos (ex: Jul + Ago), usa isso em vez do
+// relativo (Mês atual/3/6/12 meses) — os dois são mutuamente exclusivos.
+function labelPeriodoAtual(){
+  if(mesesSelecionados.size){
+    return 'em ' + Array.from(mesesSelecionados).sort((a,b)=>a-b).map(m=>MESES_LABEL[m]).join(' + ');
+  }
+  return PERIODO_LABEL[periodo];
+}
 
 function businessDaysBetween(d1, d2){
   let count = 0;
@@ -258,32 +278,33 @@ function businessDaysBetween(d1, d2){
   return count;
 }
 
-// Entregas REALIZADAS dentro do período (baseado na data de ENTREGA, não na data do pedido —
-// "quantas entregas aconteceram em agosto", não "quantos pedidos emiti em agosto").
-function filtrarEntregasRealizadas(){
+// Meses específicos selecionados (ano corrente) tomam prioridade sobre o período relativo —
+// ela pode marcar Jul+Ago pra comparar só esses dois meses, por exemplo.
+function passaNoPeriodo(d){
+  if(mesesSelecionados.size){
+    return d.getFullYear() === new Date().getFullYear() && mesesSelecionados.has(d.getMonth());
+  }
   const hoje = new Date();
   let desde;
   if(periodo === 'mes'){ desde = new Date(hoje.getFullYear(), hoje.getMonth(), 1); }
   else { desde = new Date(hoje.getFullYear(), hoje.getMonth() - Number(periodo), hoje.getDate()); }
+  return d >= desde;
+}
 
+// Entregas REALIZADAS dentro do período (baseado na data de ENTREGA, não na data do pedido —
+// "quantas entregas aconteceram em agosto", não "quantos pedidos emiti em agosto").
+function filtrarEntregasRealizadas(){
   return TODOS_PEDIDOS.filter(p => {
     if(empresa && p.empresa !== empresa) return false;
     if(!p.efetivo) return false;
-    const de = parseISOLocal(p.efetivo);
-    return de >= desde;
+    return passaNoPeriodo(parseISOLocal(p.efetivo));
   });
 }
 
 function filtrarPedidos(){
-  const hoje = new Date();
-  let desde;
-  if(periodo === 'mes'){ desde = new Date(hoje.getFullYear(), hoje.getMonth(), 1); }
-  else { desde = new Date(hoje.getFullYear(), hoje.getMonth() - Number(periodo), hoje.getDate()); }
-
   return TODOS_PEDIDOS.filter(p => {
     if(empresa && p.empresa !== empresa) return false;
-    const dp = parseISOLocal(p.data_pedido);
-    return dp >= desde;
+    return passaNoPeriodo(parseISOLocal(p.data_pedido));
   }).sort((a,b) => a.data_pedido < b.data_pedido ? -1 : (a.data_pedido > b.data_pedido ? 1 : 0));
 }
 
@@ -305,7 +326,7 @@ function renderStatsNovos(realizadas, pendentesQtd){
   return `
     <div class="stat-row">
       <div class="stat">
-        <span class="k">Entregas ${PERIODO_LABEL[periodo]}</span>
+        <span class="k">Entregas ${labelPeriodoAtual()}</span>
         <span class="v">${total}</span>
         <span class="note">Concluídas (data de entrega dentro do período)</span>
       </div>
@@ -325,7 +346,7 @@ function renderStatsNovos(realizadas, pendentesQtd){
       </div>
       <div class="stat ${atrasoMedio>0?'critical':''}">
         <span class="k">Atraso Médio</span>
-        <span class="v">${atrasoMedio>=0?'+':''}${atrasoMedio.toFixed(1)}d</span>
+        <span class="v">${atrasoMedio>0?'+':''}${Math.round(atrasoMedio)||0}d</span>
         <span class="note">Em relação ao prazo prometido pela fábrica</span>
       </div>
       <div class="stat" data-goto-pendentes style="cursor:pointer">
@@ -344,13 +365,15 @@ function renderRegiao(realizadas){
   });
   const linhas = Object.entries(porRegiao).sort((a,b) => b[1]-a[1]);
   if(!linhas.length) return '';
+  const linhaHTML = ([r,n]) => `<tr class="linha-clicavel" data-regiao="${r}"><td>${r}</td><td class="num">${n}</td></tr>`;
+  const tabela = (grupo) => `<table class="tabela-entrega"><thead><tr><th>Região</th><th class="num">Total</th></tr></thead><tbody>${grupo.map(linhaHTML).join('')}</tbody></table>`;
+  const meio = Math.ceil(linhas.length/2);
   return `
     <p class="tabela-titulo">Entregas por Região <span style="font-weight:400;color:var(--ink-faint);text-transform:none;letter-spacing:0">(toque numa região pra ver os clientes)</span></p>
-    <div class="tabela-wrap">
-      <table class="tabela-entrega">
-        <thead><tr><th>Região</th><th class="num">Total</th></tr></thead>
-        <tbody>${linhas.map(([r,n]) => `<tr class="linha-clicavel" data-regiao="${r}"><td>${r}</td><td class="num">${n}</td></tr>`).join('')}</tbody>
-      </table>
+    <div class="tabela-wrap regiao-wrap-tela">${tabela(linhas)}</div>
+    <div class="regiao-wrap-print">
+      <div class="tabela-wrap">${tabela(linhas.slice(0, meio))}</div>
+      ${linhas.slice(meio).length ? `<div class="tabela-wrap">${tabela(linhas.slice(meio))}</div>` : ''}
     </div>`;
 }
 
@@ -499,7 +522,7 @@ function renderEntrega(){
 // precisa ficar óbvio de cara, folheando, qual página é de qual representada — não uma anotação discreta.
 function syncPrintPageStyle(){
   const empLabel = empresa === 'BNZ METAIS' ? 'BNZ METAIS' : (empresa === 'CIAPLAC' ? 'CIAPLAC' : 'BNZ + CIAPLAC (Total)');
-  const perLabel = PERIODO_LABEL[periodo] || '';
+  const perLabel = labelPeriodoAtual() || '';
   const dataTxt = $('#updated-at')?.textContent || '';
   const cabecalho = ('Indicadores - Prazo de Entrega · ' + empLabel + ' — ' + perLabel).replace(/"/g,'\\"');
   const rodape = (dataTxt && dataTxt!=='—' ? 'atualizado ' + dataTxt : '').replace(/"/g,'\\"');
@@ -568,8 +591,28 @@ $('#seg-empresa').addEventListener('click', e => {
 $('#seg-periodo').addEventListener('click', e => {
   const b = e.target.closest('button[data-per]'); if(!b) return;
   periodo = b.dataset.per;
+  mesesSelecionados.clear();
+  $$('#seg-meses button').forEach(x => x.classList.remove('on'));
   filtroRegiao = null; filtroSoPendentes = false;
   $$('#seg-periodo button').forEach(x => x.classList.toggle('on', x===b));
+  renderEntrega();
+});
+
+// Meses do ano corrente, multi-seleção — pra comparar meses específicos (ex: Jul + Ago) em vez do
+// período relativo. Só mostra até o mês atual (meses futuros não têm pedido nenhum).
+(function initSegMeses(){
+  const hoje = new Date();
+  $('#seg-meses').innerHTML = MESES_LABEL.slice(0, hoje.getMonth()+1)
+    .map((m,i) => `<button data-mes="${i}">${m}</button>`).join('');
+})();
+$('#seg-meses').addEventListener('click', e => {
+  const b = e.target.closest('button[data-mes]'); if(!b) return;
+  const m = Number(b.dataset.mes);
+  if(mesesSelecionados.has(m)) mesesSelecionados.delete(m); else mesesSelecionados.add(m);
+  b.classList.toggle('on', mesesSelecionados.has(m));
+  $$('#seg-periodo button').forEach(x => x.classList.remove('on'));
+  filtroRegiao = null; filtroSoPendentes = false;
+  buscaCliente = ''; const inpM = $('#busca-cliente'); if(inpM) inpM.value = '';
   renderEntrega();
 });
 
