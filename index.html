@@ -105,7 +105,10 @@
   .dot-evolucao-atraso{fill:var(--critical);stroke:var(--surface);stroke-width:2}
 
   .tabela-titulo{font-family:"Archivo",sans-serif;font-weight:600;font-size:.78rem;color:var(--ink-soft);margin:22px 0 8px}
-  .regiao-wrap-print{display:none}
+  /* essa tabela é só Região+Total — não estica pra largura toda do card, senão o número fica
+     longe do nome da região; abraça o próprio conteúdo, tanto na tela quanto na impressão */
+  .regiao-resumo{overflow-x:auto;max-width:100%}
+  .regiao-resumo table.tabela-entrega{width:auto;min-width:280px}
   .linha-clicavel{cursor:pointer}
   .linha-clicavel:hover{background:var(--ground)}
   .chip-filtro{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-weight:600;font-size:.7rem;background:var(--blue-bg,#e9f0f3);color:var(--series-previsto);padding:2px 9px;border-radius:12px}
@@ -153,13 +156,6 @@
     /* razão social completa do cliente toma espaço demais no papel — trunca com "..." só na impressão,
        pra sobrar largura pra nome fantasia/região/efetivo/atraso aparecerem inteiros */
     table.tabela-entrega td:first-child{max-width:80px;overflow:hidden;text-overflow:ellipsis}
-    /* "Entregas por Região" full-width e alta demais no papel — na impressão troca pra uma versão
-       compacta em 2 colunas, estreita e encostada perto de onde a coluna Região começa na tabela
-       de baixo (em vez de ocupar uma faixa inteira da página só pra essa lista) */
-    .regiao-wrap-tela{display:none}
-    .regiao-wrap-print{display:flex;gap:10px;margin:0 0 14px 42%;max-width:56%}
-    .regiao-wrap-print .tabela-wrap{flex:1;min-width:0}
-    .regiao-wrap-print table.tabela-entrega{font-size:.62rem}
   }
 </style>
 <style id="print-page-style"></style>
@@ -326,7 +322,7 @@ function renderStatsNovos(realizadas, pendentesQtd){
   return `
     <div class="stat-row">
       <div class="stat">
-        <span class="k">Entregas ${labelPeriodoAtual()}</span>
+        <span class="k">Entregas ${labelPeriodoAtual()}${filtroRegiao ? ' · '+filtroRegiao : ''}</span>
         <span class="v">${total}</span>
         <span class="note">Concluídas (data de entrega dentro do período)</span>
       </div>
@@ -365,37 +361,36 @@ function renderRegiao(realizadas){
   });
   const linhas = Object.entries(porRegiao).sort((a,b) => b[1]-a[1]);
   if(!linhas.length) return '';
-  const linhaHTML = ([r,n]) => `<tr class="linha-clicavel" data-regiao="${r}"><td>${r}</td><td class="num">${n}</td></tr>`;
-  const tabela = (grupo) => `<table class="tabela-entrega"><thead><tr><th>Região</th><th class="num">Total</th></tr></thead><tbody>${grupo.map(linhaHTML).join('')}</tbody></table>`;
-  const meio = Math.ceil(linhas.length/2);
   return `
     <p class="tabela-titulo">Entregas por Região <span style="font-weight:400;color:var(--ink-faint);text-transform:none;letter-spacing:0">(toque numa região pra ver os clientes)</span></p>
-    <div class="tabela-wrap regiao-wrap-tela">${tabela(linhas)}</div>
-    <div class="regiao-wrap-print">
-      <div class="tabela-wrap">${tabela(linhas.slice(0, meio))}</div>
-      ${linhas.slice(meio).length ? `<div class="tabela-wrap">${tabela(linhas.slice(meio))}</div>` : ''}
+    <div class="tabela-wrap regiao-resumo">
+      <table class="tabela-entrega">
+        <thead><tr><th>Região</th><th class="num">Total</th></tr></thead>
+        <tbody>${linhas.map(([r,n]) => `<tr class="linha-clicavel" data-regiao="${r}"><td>${r}</td><td class="num">${n}</td></tr>`).join('')}</tbody>
+      </table>
     </div>`;
 }
 
-function renderEvolucao(){
-  // Independe do seletor de Período (é sempre o ano corrente, mês a mês) - só respeita a Empresa.
-  const ano = new Date().getFullYear();
-  const porMes = Array.from({length:12}, () => ({total:0, noPrazo:0}));
-  TODOS_PEDIDOS.forEach(p => {
-    if(empresa && p.empresa !== empresa) return;
-    if(!p.efetivo) return;
+function renderEvolucao(realizadas){
+  // Agora é dinâmico: mostra mês a mês só o que sobrou depois do filtro de cima (Empresa, Período/Meses
+  // e Região, se ela clicou uma) — ela reclamou que antes ficava sempre o ano inteiro fixo, ignorando
+  // o que estava selecionado, e isso confundia ("apertei Setembro e o gráfico não mudou").
+  const porMes = {};
+  realizadas.forEach(p => {
     const d = parseISOLocal(p.efetivo);
-    if(d.getFullYear() !== ano) return;
-    const m = d.getMonth();
-    porMes[m].total++;
-    if(p.atraso_dias <= 0) porMes[m].noPrazo++;
+    const key = d.getFullYear() + '-' + d.getMonth();
+    if(!porMes[key]) porMes[key] = { total:0, noPrazo:0, ano:d.getFullYear(), mes:d.getMonth() };
+    porMes[key].total++;
+    if(p.atraso_dias <= 0) porMes[key].noPrazo++;
   });
-  const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const pontos = porMes.map((m,i) => ({mes:MESES[i], pct: m.total ? Math.round(100*m.noPrazo/m.total) : null, total:m.total}))
-    .filter(p => p.pct != null)
-    .map(p => ({...p, pctFora: 100-p.pct}));
+  const anoAtual = new Date().getFullYear();
+  const pontos = Object.keys(porMes).sort().map(k => {
+    const m = porMes[k];
+    return { mes: MESES_LABEL[m.mes] + (m.ano !== anoAtual ? '/' + String(m.ano).slice(2) : ''), pct: Math.round(100*m.noPrazo/m.total), total: m.total };
+  }).map(p => ({...p, pctFora: 100-p.pct}));
 
-  if(pontos.length < 2) return `<p class="tabela-titulo">Evolução da Performance de Entrega — ${ano}</p><div class="empty-msg">Ainda não há meses suficientes com entregas concluídas em ${ano}.</div>`;
+  const tituloRegiao = filtroRegiao ? ' · ' + filtroRegiao : '';
+  if(pontos.length < 2) return `<p class="tabela-titulo">Evolução da Performance de Entrega${tituloRegiao}</p><div class="empty-msg">Ainda não há meses suficientes com entregas concluídas no período selecionado.</div>`;
 
   const W = 640, H = 220;
   const padL = 44, padR = 16, padT = 20, padB = 28;
@@ -422,7 +417,7 @@ function renderEvolucao(){
   let labelsSvg = pontos.map((p,i) => `<text class="axis-label" x="${xFor(i)}" y="${(yFor(p.pct)-10).toFixed(1)}" text-anchor="middle" style="font-weight:700">${p.pct}%</text>`).join('');
 
   return `
-    <p class="tabela-titulo">Evolução da Performance de Entrega — ${ano} (% de entregas por mês, no prazo x fora do prazo)</p>
+    <p class="tabela-titulo">Evolução da Performance de Entrega${tituloRegiao} (% de entregas por mês, no prazo x fora do prazo)</p>
     <div class="legend">
       <span><span class="dot" style="background:var(--good)"></span>No Prazo</span>
       <span><span class="dot" style="background:var(--critical)"></span>Fora do Prazo</span>
@@ -501,18 +496,22 @@ function todosPendentes(){
 function renderEntrega(){
   const pedidos = filtrarPedidos();
   const realizadas = filtrarEntregasRealizadas();
+  // Clicar numa região agora também recorta os cards e a Evolução (não só a Lista completa) — pra
+  // comparar performance entre regiões (ex: Campinas x Marília, ambas BNZ). A tabela "Entregas por
+  // Região" continua usando `realizadas` (sem esse recorte) pra ela poder ver/trocar de região.
+  const realizadasRegiao = filtroRegiao ? realizadas.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao) : realizadas;
   const pendentesQtd = todosPendentes().length;
 
   // A tabela troca de BASE conforme o filtro clicado: a Lista padrão usa pedidos (filtro por data do
-  // PEDIDO, dentro do período); clicar numa Região usa realizadas (filtro por data de ENTREGA) — é a
-  // mesma base que a tabela de Entregas por Região contou, senão os números não batem. Pendentes usa
+  // PEDIDO, dentro do período); clicar numa Região usa realizadasRegiao (filtro por data de ENTREGA) —
+  // é a mesma base que os cards/evolução usam agora, senão os números não batem. Pendentes usa
   // todosPendentes() (sem filtro de período), pra bater com o número do card.
   let baseTabela = pedidos;
   if(buscaCliente) baseTabela = filtrarPorCliente(buscaCliente);
   else if(filtroSoPendentes) baseTabela = todosPendentes();
-  else if(filtroRegiao) baseTabela = realizadas.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao);
+  else if(filtroRegiao) baseTabela = realizadasRegiao;
 
-  $('#entrega-body').innerHTML = renderStatsNovos(realizadas, pendentesQtd) + renderEvolucao() + renderRegiao(realizadas) + renderTabela(baseTabela);
+  $('#entrega-body').innerHTML = renderStatsNovos(realizadasRegiao, pendentesQtd) + renderEvolucao(realizadasRegiao) + renderRegiao(realizadas) + renderTabela(baseTabela);
   syncPrintPageStyle();
 }
 
