@@ -446,9 +446,9 @@ function renderTabela(pedidos){
       <td>${p.regiao||'—'}</td>
       <td>${p.efetivo ? fmtDateBR(p.efetivo) : '<span class="pendente">—</span>'}</td>
       <td class="num">${atrasoTxt}</td>
-      <td>${p.pedido||'—'}</td>
       <td>${fmtDateBR(p.data_pedido)}</td>
       <td>${fmtDateBR(p.previsto)}</td>
+      <td>${p.pedido||'—'}</td>
     </tr>`;
   }).join('');
   return `
@@ -456,7 +456,7 @@ function renderTabela(pedidos){
     ${resumo}
     <div class="tabela-wrap">
       <table class="tabela-entrega">
-        <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>Estado</th><th>Região</th><th>Efetivo</th><th>Atraso</th><th>Pedido</th><th>Data Pedido</th><th>Previsto</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>Estado</th><th>Região</th><th>Efetivo</th><th>Atraso</th><th>Data Pedido</th><th>Previsto</th><th>Pedido</th></tr></thead>
         <tbody>${linhas}</tbody>
       </table>
     </div>`;
