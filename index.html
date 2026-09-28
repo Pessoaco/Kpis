@@ -304,6 +304,14 @@ function filtrarPedidos(){
   }).sort((a,b) => a.data_pedido < b.data_pedido ? -1 : (a.data_pedido > b.data_pedido ? 1 : 0));
 }
 
+// Sufixo mostrado no título dos cards/gráfico quando um recorte (região OU busca de cliente) tá ativo —
+// os dois são mutuamente exclusivos, então só um aparece por vez.
+function sufixoFiltroAtual(){
+  if(filtroRegiao) return ' · ' + filtroRegiao;
+  if(buscaCliente) return ' · "' + buscaCliente + '"';
+  return '';
+}
+
 function renderStatsNovos(realizadas, pendentesQtd){
   const total = realizadas.length;
   const noPrazo = realizadas.filter(p => p.atraso_dias <= 0);
@@ -322,7 +330,7 @@ function renderStatsNovos(realizadas, pendentesQtd){
   return `
     <div class="stat-row">
       <div class="stat">
-        <span class="k">Entregas ${labelPeriodoAtual()}${filtroRegiao ? ' · '+filtroRegiao : ''}</span>
+        <span class="k">Entregas ${labelPeriodoAtual()}${sufixoFiltroAtual()}</span>
         <span class="v">${total}</span>
         <span class="note">Concluídas (data de entrega dentro do período)</span>
       </div>
@@ -389,7 +397,7 @@ function renderEvolucao(realizadas){
     return { mes: MESES_LABEL[m.mes] + (m.ano !== anoAtual ? '/' + String(m.ano).slice(2) : ''), pct: Math.round(100*m.noPrazo/m.total), total: m.total };
   }).map(p => ({...p, pctFora: 100-p.pct}));
 
-  const tituloRegiao = filtroRegiao ? ' · ' + filtroRegiao : '';
+  const tituloRegiao = sufixoFiltroAtual();
   if(pontos.length < 2) return `<p class="tabela-titulo">Evolução da Performance de Entrega${tituloRegiao}</p><div class="empty-msg">Ainda não há meses suficientes com entregas concluídas no período selecionado.</div>`;
 
   const W = 640, H = 220;
@@ -496,22 +504,29 @@ function todosPendentes(){
 function renderEntrega(){
   const pedidos = filtrarPedidos();
   const realizadas = filtrarEntregasRealizadas();
-  // Clicar numa região agora também recorta os cards e a Evolução (não só a Lista completa) — pra
-  // comparar performance entre regiões (ex: Campinas x Marília, ambas BNZ). A tabela "Entregas por
-  // Região" continua usando `realizadas` (sem esse recorte) pra ela poder ver/trocar de região.
-  const realizadasRegiao = filtroRegiao ? realizadas.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao) : realizadas;
-  const pendentesQtd = todosPendentes().length;
+  // Clicar numa região OU buscar um cliente agora também recorta os cards e a Evolução (não só a Lista
+  // completa) — pra comparar performance entre regiões/clientes. A tabela "Entregas por Região" continua
+  // usando `realizadas` (sem esse recorte) pra ela poder ver/trocar de região. Busca de cliente ignora o
+  // Período (é consulta pontual nos 12 meses inteiros, igual já era na tabela) — por isso usa
+  // filtrarPorCliente() em vez de `realizadas`.
+  let realizadasFiltradas = realizadas;
+  if(buscaCliente) realizadasFiltradas = filtrarPorCliente(buscaCliente).filter(p => p.efetivo);
+  else if(filtroRegiao) realizadasFiltradas = realizadas.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao);
+
+  let pendentesQtd = todosPendentes().length;
+  if(buscaCliente) pendentesQtd = filtrarPorCliente(buscaCliente).filter(p => ehPendenteConfiavel(p)).length;
+  else if(filtroRegiao) pendentesQtd = todosPendentes().filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao).length;
 
   // A tabela troca de BASE conforme o filtro clicado: a Lista padrão usa pedidos (filtro por data do
-  // PEDIDO, dentro do período); clicar numa Região usa realizadasRegiao (filtro por data de ENTREGA) —
+  // PEDIDO, dentro do período); clicar numa Região usa realizadasFiltradas (filtro por data de ENTREGA) —
   // é a mesma base que os cards/evolução usam agora, senão os números não batem. Pendentes usa
   // todosPendentes() (sem filtro de período), pra bater com o número do card.
   let baseTabela = pedidos;
   if(buscaCliente) baseTabela = filtrarPorCliente(buscaCliente);
   else if(filtroSoPendentes) baseTabela = todosPendentes();
-  else if(filtroRegiao) baseTabela = realizadasRegiao;
+  else if(filtroRegiao) baseTabela = realizadasFiltradas;
 
-  $('#entrega-body').innerHTML = renderStatsNovos(realizadasRegiao, pendentesQtd) + renderEvolucao(realizadasRegiao) + renderRegiao(realizadas) + renderTabela(baseTabela);
+  $('#entrega-body').innerHTML = renderStatsNovos(realizadasFiltradas, pendentesQtd) + renderEvolucao(realizadasFiltradas) + renderRegiao(realizadas) + renderTabela(baseTabela);
   syncPrintPageStyle();
 }
 
