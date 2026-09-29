@@ -68,8 +68,8 @@
   .seg.empresa button[data-emp="BNZ METAIS"].on{background:var(--bnz-edge)}
   .statusbar{font-size:.72rem;color:var(--ink-faint);margin-left:auto}
   .busca-cliente{font:inherit;font-size:.76rem;padding:6px 12px;border:1px solid var(--hair);border-radius:8px;background:var(--surface);color:var(--ink);min-width:280px}
-  .btn-imprimir{font:inherit;font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;padding:7px 14px;border:1px solid var(--series-previsto);border-radius:8px;background:var(--surface);color:var(--series-previsto);cursor:pointer}
-  .btn-imprimir:hover{background:var(--series-previsto);color:#fff}
+  .btn-imprimir-icone{font-size:1.05rem;line-height:1;padding:5px 9px;border:1px solid var(--hair);border-radius:7px;background:var(--surface);cursor:pointer}
+  .btn-imprimir-icone:hover{background:var(--ground)}
   .busca-cliente::placeholder{color:var(--ink-faint)}
   .resumo-cliente{display:flex;gap:16px;flex-wrap:wrap;font-size:.74rem;color:var(--ink-soft);font-weight:600;margin:-2px 0 10px}
   .resumo-cliente span.critical{color:var(--critical)}
@@ -85,11 +85,11 @@
   .stat.critical .v{color:var(--critical)}
   .stat.good .v{color:var(--good)}
   .stat .note{font-size:.68rem;color:var(--ink-faint)}
-  .curva-a-linhas{display:flex;flex-direction:column;gap:2px;margin:2px 0}
-  .curva-a-linhas span{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:.78rem}
-  .curva-a-linhas span b{font-size:1.25em;font-weight:700}
-  .curva-a-linhas .good{color:var(--good)}
-  .curva-a-linhas .critical{color:var(--critical)}
+  .curva-a-linhas{display:flex;flex-direction:column;gap:4px;margin:3px 0}
+  .curva-a-linhas .linha{display:flex;align-items:center;gap:6px;font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;color:var(--ink-soft)}
+  .curva-a-linhas .pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:.68rem;padding:2px 8px;border-radius:999px;color:#fff}
+  .curva-a-linhas .pill.good{background:var(--good)}
+  .curva-a-linhas .pill.critical{background:var(--critical)}
   .stat-badge{position:absolute;top:9px;right:10px;font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:.66rem;padding:2px 8px;border-radius:999px;color:#fff}
   .stat.critical .stat-badge{background:var(--critical)}
   .stat.good .stat-badge{background:var(--good)}
@@ -159,7 +159,7 @@
     .tagline{display:none!important}
     /* controls (empresa/período) agora SAI impresso — ela quer ver qual representada e prazo
        estão selecionados no papel, só a busca e o "atualizando..." não fazem sentido no PDF */
-    .busca-cliente,.statusbar,.btn-imprimir{display:none!important}
+    .busca-cliente,.statusbar,.btn-imprimir-icone{display:none!important}
     /* relatório pra diretoria de UMA representada não pode nem mostrar que existe outra — só o
        botão já selecionado (CIAPLAC ou BNZ) aparece impresso; os outros (e "Total") somem */
     .seg.empresa button:not(.on){display:none!important}
@@ -181,7 +181,10 @@
 <div class="wrap">
   <header class="masthead">
     <h1>Indicadores <span>— Prazo de Entrega</span></h1>
-    <div class="meta" id="hoje">—</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button id="btn-imprimir" class="btn-imprimir-icone" onclick="window.print()" title="Imprimir / Salvar PDF">🖨️</button>
+      <div class="meta" id="hoje">—</div>
+    </div>
   </header>
   <p class="tagline">Indicadores ao vivo — página cresce conforme novos indicadores forem adicionados.</p>
 
@@ -200,7 +203,6 @@
       </div>
       <div class="seg meses" id="seg-meses"></div>
       <input type="text" id="busca-cliente" class="busca-cliente" placeholder="🔎 Buscar cliente… (separe por vírgula p/ vários)">
-      <button id="btn-imprimir" class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
       <div class="statusbar" id="statusbar">carregando…</div>
     </div>
     <h2>Indicador de Entregas — Prazo x Real</h2>
@@ -368,16 +370,18 @@ function renderCurvaACard(realizadasBase){
   const foraPrazo = total - noPrazo;
   const pctNoPrazo = total ? Math.round(100*noPrazo/total) : 0;
   const pctForaPrazo = total ? 100 - pctNoPrazo : 0;
-  // Percentual sempre junto do próprio rótulo (não um badge solto lá em cima) — "58% No Prazo" e
-  // "42% Fora do Prazo" cada um na sua linha, pra não ficar ambíguo o que o número grande significa.
+  // Mesmo nome/explicação do card "Principais Clientes" já usado no Copiloto de Vendas — ela foi
+  // explícita que o texto tem que ficar igual entre os dois apps.
+  // Percentual sempre junto do próprio rótulo, numa pílula colorida (mesma estética do stat-badge
+  // usado nos outros cards) — não um badge solto lá em cima, nem texto colorido sem "moldura".
   return `
       <div class="stat">
-        <span class="k">Curva A (Clientes)</span>
+        <span class="k">Principais Clientes</span>
         <div class="curva-a-linhas">
-          <span class="good"><b>${pctNoPrazo}%</b> No Prazo</span>
-          <span class="critical"><b>${pctForaPrazo}%</b> Fora do Prazo</span>
+          <span class="linha"><span class="pill good">${pctNoPrazo}%</span> No Prazo</span>
+          <span class="linha"><span class="pill critical">${pctForaPrazo}%</span> Fora do Prazo</span>
         </div>
-        <span class="note">${total} entrega${total===1?'':'s'} no período</span>
+        <span class="note">Curva A · top 20% dos clientes (12m) · ${total} entrega${total===1?'':'s'}</span>
       </div>`;
 }
 
