@@ -54,6 +54,21 @@
   .fin-card.bnz .v{color:var(--bnz-ink)}
   .fin-card.ciaplac .v{color:var(--ciaplac-ink)}
   .fin-card .note{font-size:.74rem;color:var(--ink-soft);margin-top:4px}
+  .fin-card .k.chart-k{margin-bottom:8px}
+
+  .chart-wrap{overflow-x:auto}
+  svg.chart{display:block;width:100%;height:auto}
+  .axis-label{fill:var(--ink-faint);font-size:10px;font-family:"IBM Plex Sans",sans-serif}
+  .empty-msg{font-size:.76rem;color:var(--ink-faint);padding:6px 0}
+
+  .tabela-titulo{font-family:"Archivo",sans-serif;font-weight:600;font-size:.9rem;margin:26px 0 8px}
+  .tabela-wrap{overflow-x:auto;border:1px solid var(--hair);border-radius:8px}
+  table.tabela-fin{border-collapse:collapse;width:100%;font-size:.72rem}
+  table.tabela-fin th,table.tabela-fin td{text-align:left;padding:5px 8px;border-top:1px solid var(--hair);white-space:nowrap}
+  table.tabela-fin th{font-family:"Archivo",sans-serif;font-size:.64rem;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-faint);background:var(--surface);border-top:0}
+  table.tabela-fin td:first-child{color:var(--ink);font-weight:500}
+  table.tabela-fin tbody tr:hover{background:var(--ground)}
+  table.tabela-fin .num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
 
   .status{margin-top:18px;font-size:.72rem;color:var(--ink-faint)}
   .status.err{color:var(--ciaplac-ink)}
@@ -106,7 +121,18 @@
       <div class="v" id="v-bnz">—</div>
       <div class="note">Sem acessórios, acabamentos, condutores e frete — mesma regra do Copiloto.</div>
     </div>
+    <div class="fin-card ciaplac">
+      <div class="k chart-k">CIAPLAC · Evolução do faturamento entregue (mês a mês)</div>
+      <div id="chart-ciaplac"><div class="empty-msg">carregando…</div></div>
+    </div>
+    <div class="fin-card bnz">
+      <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
+      <div id="chart-bnz"><div class="empty-msg">carregando…</div></div>
+    </div>
   </div>
+
+  <div id="lista-ciaplac"></div>
+  <div id="lista-bnz"></div>
 
   <div class="status" id="status">carregando…</div>
   <button class="sair" id="btn-sair">sair</button>
@@ -141,6 +167,64 @@ function fmtMes(ym){
   const [ano,mes] = ym.split('-');
   return MESES[Number(mes)-1] + '/' + ano;
 }
+const MESES_LABEL = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function mesLabel(ym){ return MESES_LABEL[Number(ym.split('-')[1])-1]; }
+function fmtData(iso){
+  if(!iso) return '';
+  const [a,m,d] = iso.split('-');
+  return d+'/'+m+'/'+a;
+}
+
+function renderEvolucao(pontosRaw, corVar, fmt){
+  if(!pontosRaw || pontosRaw.length < 2){
+    return '<div class="empty-msg">Ainda não há meses suficientes com entregas neste ano.</div>';
+  }
+  const pontos = pontosRaw.map(p => ({ mes: mesLabel(p.mes), valor: p.valor }));
+  const max = Math.max(...pontos.map(p=>p.valor), 1);
+  const W = 560, H = 170;
+  const padL = 8, padR = 8, padT = 22, padB = 22;
+  const plotW = W-padL-padR, plotH = H-padT-padB;
+  const xFor = i => padL + (pontos.length===1?plotW/2:(i/(pontos.length-1))*plotW);
+  const yFor = v => padT + plotH - (v/max)*plotH;
+  const linhaPts = pontos.map((p,i) => `${xFor(i).toFixed(1)},${yFor(p.valor).toFixed(1)}`);
+  const linha = 'M'+linhaPts.join(' L');
+  const area = `M${xFor(0).toFixed(1)},${yFor(0).toFixed(1)} L${linhaPts.join(' L')} L${xFor(pontos.length-1).toFixed(1)},${yFor(0).toFixed(1)} Z`;
+  const dotsSvg = pontos.map((p,i) => `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(p.valor).toFixed(1)}" r="3.5" fill="var(${corVar})"></circle>`).join('');
+  const labelsSvg = pontos.map((p,i) => `<text x="${xFor(i)}" y="${(yFor(p.valor)-8).toFixed(1)}" text-anchor="middle" class="axis-label" style="font-weight:700">${fmt(p.valor)}</text>`).join('');
+  const xLabelsSvg = pontos.map((p,i) => `<text x="${xFor(i)}" y="${H-6}" text-anchor="middle" class="axis-label">${p.mes}</text>`).join('');
+  return `<div class="chart-wrap"><svg class="chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+    <path d="${area}" fill="var(${corVar})" opacity=".14" stroke="none"/>
+    <path d="${linha}" fill="none" stroke="var(${corVar})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dotsSvg}${labelsSvg}${xLabelsSvg}
+  </svg></div>`;
+}
+
+function renderListaCiaplac(pedidos){
+  if(!pedidos || !pedidos.length) return '';
+  const linhas = pedidos.map(p => `<tr>
+    <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
+    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
+    <td class="num">${fmtMoeda(p.valor)}</td>
+  </tr>`).join('');
+  return `<p class="tabela-titulo">CIAPLAC · Lista completa (${pedidos.length} pedidos)</p>
+    <div class="tabela-wrap"><table class="tabela-fin">
+      <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>Estado</th><th>Dt Entrega</th><th>Data Pedido</th><th>Pedido</th><th class="num">Valor</th></tr></thead>
+      <tbody>${linhas}</tbody>
+    </table></div>`;
+}
+function renderListaBnz(pedidos){
+  if(!pedidos || !pedidos.length) return '';
+  const linhas = pedidos.map(p => `<tr>
+    <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
+    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
+    <td class="num">${Math.round(p.quantidade).toLocaleString('pt-BR')}</td>
+  </tr>`).join('');
+  return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)</p>
+    <div class="tabela-wrap"><table class="tabela-fin">
+      <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>Estado</th><th>Dt Entrega</th><th>Data Pedido</th><th>Pedido</th><th class="num">Peças</th></tr></thead>
+      <tbody>${linhas}</tbody>
+    </table></div>`;
+}
 
 async function load(){
   if(!creds || !creds.user){ showLogin(); return; }
@@ -162,6 +246,10 @@ async function load(){
     $("#v-ciaplac").textContent = fmtMoeda(fin.ciaplac_faturamento);
     $("#v-bnz").textContent = Math.round(fin.bnz_pecas||0).toLocaleString('pt-BR');
     $("#mes-ref").textContent = fmtMes(fin.mes_referencia);
+    $("#chart-ciaplac").innerHTML = renderEvolucao(fin.ciaplac_evolucao, '--ciaplac-edge', v => fmtMoeda(v));
+    $("#chart-bnz").innerHTML = renderEvolucao(fin.bnz_evolucao, '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR'));
+    $("#lista-ciaplac").innerHTML = renderListaCiaplac(fin.ciaplac_pedidos);
+    $("#lista-bnz").innerHTML = renderListaBnz(fin.bnz_pedidos);
     $("#status").textContent = "atualizado agora";
   }catch(err){
     $("#status").className = "status err";
