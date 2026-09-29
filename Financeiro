@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Indicadores - Financeiro</title>
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236b3fa0'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white' font-family='Arial'%3EF%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --ground:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-soft:#52514e; --ink-faint:#898781; --hair:#e1e0d9;
+    --series-previsto:#2a78d6;
+    --bnz-bg:#e3edf7; --bnz-ink:#1f4e8a; --bnz-edge:#2a78d6;
+    --ciaplac-bg:#fbe9de; --ciaplac-ink:#8a3f1f; --ciaplac-edge:#eb6834;
+    --purple-bg:#efe6f7; --purple-ink:#6b3fa0; --purple-edge:#a780c9;
+    --shadow:0 1px 2px rgba(11,11,11,.05),0 4px 14px rgba(11,11,11,.045);
+    --radius:9px;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-soft:#c3c2b7; --ink-faint:#898781; --hair:#2c2c2a;
+    --series-previsto:#3987e5;
+    --bnz-bg:#12233a; --bnz-ink:#7fb2e8; --bnz-edge:#3987e5;
+    --ciaplac-bg:#3a1f12; --ciaplac-ink:#f0a97f; --ciaplac-edge:#d95926;
+    --purple-bg:#241a2e; --purple-ink:#c9a6e6; --purple-edge:#6b4d85;
+    --shadow:0 1px 2px rgba(0,0,0,.32),0 5px 16px rgba(0,0,0,.26);
+  }}
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;line-height:1.48;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:640px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 16px 60px}
+
+  .nav-voltar{display:inline-block;margin-bottom:8px;font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;color:var(--series-previsto);text-decoration:none}
+  .nav-voltar:hover{text-decoration:underline}
+  .masthead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;padding-bottom:8px;border-bottom:3px solid var(--ink)}
+  .masthead h1{font-family:"Archivo",sans-serif;font-weight:700;font-size:clamp(1.05rem,4vw,1.5rem);letter-spacing:-.01em;margin:0}
+  .masthead h1 span{color:var(--ink-soft);font-weight:600}
+  .meta{font-size:.72rem;color:var(--ink-soft)}
+  .tagline{margin:6px 0 20px;font-size:.78rem;color:var(--ink-soft);font-style:italic}
+  .aviso{margin:10px 0 24px;font-size:.72rem;color:var(--purple-ink);background:var(--purple-bg);border:1px solid var(--purple-edge);border-radius:8px;padding:8px 12px}
+
+  .cards{display:flex;flex-direction:column;gap:14px}
+  .fin-card{border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)}
+  .fin-card.bnz{background:var(--bnz-bg);border:1px solid var(--bnz-edge)}
+  .fin-card.ciaplac{background:var(--ciaplac-bg);border:1px solid var(--ciaplac-edge)}
+  .fin-card .k{font-family:"Archivo",sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.02em;text-transform:uppercase}
+  .fin-card.bnz .k{color:var(--bnz-ink)}
+  .fin-card.ciaplac .k{color:var(--ciaplac-ink)}
+  .fin-card .v{font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:2.4rem;font-variant-numeric:tabular-nums;margin-top:4px}
+  .fin-card.bnz .v{color:var(--bnz-ink)}
+  .fin-card.ciaplac .v{color:var(--ciaplac-ink)}
+  .fin-card .note{font-size:.74rem;color:var(--ink-soft);margin-top:4px}
+
+  .status{margin-top:18px;font-size:.72rem;color:var(--ink-faint)}
+  .status.err{color:var(--ciaplac-ink)}
+
+  .login{position:fixed;inset:0;z-index:50;background:var(--ground);display:flex;align-items:center;justify-content:center;padding:24px}
+  .login form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:11px}
+  .login h2{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.25rem;margin:0}
+  .login p{margin:0 0 6px;font-size:.8rem;color:var(--ink-soft)}
+  .login input{font:inherit;padding:11px 13px;border:1px solid var(--hair);border-radius:8px;background:var(--surface);color:var(--ink)}
+  .login input:focus{outline:2px solid var(--series-previsto);outline-offset:1px}
+  .login button{font:inherit;font-weight:700;font-family:"Archivo",sans-serif;padding:11px;border:0;border-radius:8px;background:var(--purple-ink);color:#fff;cursor:pointer}
+  .login button:active{transform:translateY(1px)}
+  .login .msg{font-size:.78rem;color:var(--ciaplac-ink);min-height:1.1em}
+
+  .sair{margin-top:22px;font-size:.72rem;color:var(--ink-faint);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
+
+  @media print{ body{display:none} }
+</style>
+</head>
+<body>
+
+<div class="login" id="login">
+  <form id="login-form" autocomplete="on">
+    <h2>Financeiro</h2>
+    <p>Fechamento do mês do representante. Acesso restrito.</p>
+    <input id="login-user" name="username" type="text" placeholder="usuário" autocapitalize="none" autocomplete="username" required>
+    <input id="login-pass" name="password" type="password" placeholder="senha" autocomplete="current-password" required>
+    <button type="submit">Entrar</button>
+    <span class="msg" id="login-msg"></span>
+  </form>
+</div>
+
+<div class="wrap" id="content" hidden>
+  <a href="../" class="nav-voltar">← Indicadores</a>
+  <header class="masthead">
+    <h1>Indicadores <span>— Financeiro</span></h1>
+    <span class="meta" id="mes-ref">—</span>
+  </header>
+  <p class="tagline">Fechamento do mês por data efetiva de entrega — o que já foi entregue, pra acompanhar o resultado.</p>
+  <div class="aviso">Uso pessoal do representante. Não é feito pra impressão ou compartilhamento com diretoria.</div>
+
+  <div class="cards">
+    <div class="fin-card ciaplac">
+      <div class="k">CIAPLAC · Faturamento entregue no mês</div>
+      <div class="v" id="v-ciaplac">—</div>
+      <div class="note">Soma dos pedidos com entrega efetiva registrada no mês corrente.</div>
+    </div>
+    <div class="fin-card bnz">
+      <div class="k">BNZ · Peças entregues no mês</div>
+      <div class="v" id="v-bnz">—</div>
+      <div class="note">Sem acessórios, acabamentos, condutores e frete — mesma regra do Copiloto.</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">carregando…</div>
+  <button class="sair" id="btn-sair">sair</button>
+</div>
+
+<script>
+const WEBHOOK_URL = "https://auto.ialink.com.br/webhook/painel-vendedor";
+const $ = s => document.querySelector(s);
+
+let creds = null;
+try { creds = JSON.parse(localStorage.getItem("pv_auth") || "null"); } catch(e){}
+
+function showLogin(msg){
+  $("#login").hidden = false;
+  $("#content").hidden = true;
+  $("#login-msg").textContent = msg || "";
+  const u = $("#login-user"); if(u && !u.value) u.focus();
+}
+function logout(){
+  try { localStorage.removeItem("pv_auth"); } catch(e){}
+  creds = null;
+  $("#login-pass").value = "";
+  showLogin("");
+}
+
+function fmtMoeda(v){
+  return "R$ " + Math.round(v||0).toLocaleString('pt-BR');
+}
+function fmtMes(ym){
+  if(!ym) return "—";
+  const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const [ano,mes] = ym.split('-');
+  return MESES[Number(mes)-1] + '/' + ano;
+}
+
+async function load(){
+  if(!creds || !creds.user){ showLogin(); return; }
+  $("#login").hidden = true;
+  $("#content").hidden = false;
+  $("#status").className = "status";
+  $("#status").textContent = "carregando…";
+  const ctrl = new AbortController();
+  const to = setTimeout(()=>ctrl.abort(), 45000);
+  try{
+    const url = WEBHOOK_URL + "?user=" + encodeURIComponent(creds.user) + "&pass=" + encodeURIComponent(creds.pass);
+    const r = await fetch(url, {cache:"no-store", signal:ctrl.signal});
+    clearTimeout(to);
+    if(r.status === 401 || r.status === 403){ logout(); showLogin("Usuário ou senha errado."); return; }
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const data = await r.json();
+    if(data && data.erro){ logout(); showLogin("Usuário ou senha errado."); return; }
+    const fin = data.financeiro || {};
+    $("#v-ciaplac").textContent = fmtMoeda(fin.ciaplac_faturamento);
+    $("#v-bnz").textContent = Math.round(fin.bnz_pecas||0).toLocaleString('pt-BR');
+    $("#mes-ref").textContent = fmtMes(fin.mes_referencia);
+    $("#status").textContent = "atualizado agora";
+  }catch(err){
+    $("#status").className = "status err";
+    $("#status").textContent = "erro ao atualizar: " + (err && err.message || err);
+  }
+}
+
+$("#login-form").addEventListener("submit", e => {
+  e.preventDefault();
+  creds = { user: $("#login-user").value.trim(), pass: $("#login-pass").value };
+  try { localStorage.setItem("pv_auth", JSON.stringify(creds)); } catch(e){}
+  load();
+});
+$("#btn-sair").addEventListener("click", logout);
+
+load();
+</script>
+</body>
+</html>
