@@ -71,7 +71,7 @@
   .fin-card .k.chart-k{margin-bottom:8px}
 
   .chart-wrap{overflow-x:auto}
-  svg.chart{display:block;width:100%;height:auto}
+  svg.chart{display:block;max-width:640px}
   .axis-label{fill:var(--ink-faint);font-size:10px;font-family:"IBM Plex Sans",sans-serif}
   .empty-msg{font-size:.76rem;color:var(--ink-faint);padding:6px 0}
 
@@ -113,8 +113,12 @@
     .seg.empresa button:not(.on){display:none!important}
     .fin-card{box-shadow:none;border:1px solid #ccc}
     .chart-wrap,.tabela-wrap{overflow-x:hidden}
-    table.tabela-fin th,table.tabela-fin td{padding:3px 5px}
-    table.tabela-fin td:first-child{max-width:80px;overflow:hidden;text-overflow:ellipsis}
+    svg.chart{max-width:100%}
+    table.tabela-fin{table-layout:fixed;width:100%}
+    table.tabela-fin th,table.tabela-fin td{padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    table.tabela-fin td:first-child,table.tabela-fin th:first-child{max-width:70px}
+    table.tabela-fin td:nth-child(2),table.tabela-fin th:nth-child(2){max-width:60px}
+    table.tabela-fin td:nth-child(3),table.tabela-fin th:nth-child(3){max-width:55px}
   }
 </style>
 <style id="print-page-style"></style>
