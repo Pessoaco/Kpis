@@ -65,13 +65,13 @@
   .seg.empresa button.on{background:var(--ciaplac-edge);color:#fff}
   .seg.empresa button[data-emp="BNZ METAIS"].on{background:var(--bnz-edge)}
   .statusbar{font-size:.72rem;color:var(--ink-faint);margin-left:auto}
-  .busca-cliente{font:inherit;font-size:.76rem;padding:6px 12px;border:1px solid var(--hair);border-radius:8px;background:var(--surface);color:var(--ink);min-width:190px}
+  .busca-cliente{font:inherit;font-size:.76rem;padding:6px 12px;border:1px solid var(--hair);border-radius:8px;background:var(--surface);color:var(--ink);min-width:280px}
   .busca-cliente::placeholder{color:var(--ink-faint)}
   .resumo-cliente{display:flex;gap:16px;flex-wrap:wrap;font-size:.74rem;color:var(--ink-soft);font-weight:600;margin:-2px 0 10px}
   .resumo-cliente span.critical{color:var(--critical)}
   .resumo-cliente span.good{color:var(--good)}
 
-  .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+  .stat-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
   .stat{position:relative;border:1px solid var(--hair);border-radius:8px;padding:11px 12px;display:flex;flex-direction:column;gap:3px}
   .stat.critical,.stat.good{padding-top:28px}
   .stat.critical{background:var(--critical-bg);border-color:var(--critical-edge)}
@@ -108,10 +108,14 @@
   /* essa tabela é só Região+Total — não estica pra largura toda do card, senão o número fica
      longe do nome da região; abraça o próprio conteúdo, tanto na tela quanto na impressão */
   .regiao-resumo{overflow-x:auto;max-width:100%}
-  .regiao-resumo table.tabela-entrega{width:auto;min-width:280px}
+  .regiao-resumo table.tabela-entrega{width:auto;min-width:420px;font-size:.8rem}
+  .regiao-resumo table.tabela-entrega th,.regiao-resumo table.tabela-entrega td{padding:7px 12px}
   .linha-clicavel{cursor:pointer}
   .linha-clicavel:hover{background:var(--ground)}
   .chip-filtro{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-weight:600;font-size:.7rem;background:var(--blue-bg,#e9f0f3);color:var(--series-previsto);padding:2px 9px;border-radius:12px}
+  .chip-inline{display:inline-block;font-weight:700;font-size:.9em;background:var(--blue-bg,#e9f0f3);color:var(--series-previsto);padding:1px 8px;border-radius:10px}
+  .linha-filtro{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:"Archivo",sans-serif;font-weight:600;font-size:.8rem;color:var(--ink-soft);margin:0 0 14px}
+  .linha-filtro button{font:inherit;font-size:.72rem;border:0;background:none;color:var(--series-previsto);cursor:pointer;text-decoration:underline}
   .chip-filtro button{font:inherit;font-size:.68rem;border:0;background:none;color:inherit;cursor:pointer;padding:0;text-decoration:underline}
   .tabela-wrap{overflow-x:auto;border:1px solid var(--hair);border-radius:8px}
   table.tabela-entrega{border-collapse:collapse;width:100%;font-size:.71rem}
@@ -147,6 +151,9 @@
     /* controls (empresa/período) agora SAI impresso — ela quer ver qual representada e prazo
        estão selecionados no papel, só a busca e o "atualizando..." não fazem sentido no PDF */
     .busca-cliente,.statusbar{display:none!important}
+    /* relatório pra diretoria de UMA representada não pode nem mostrar que existe outra — só o
+       botão já selecionado (CIAPLAC ou BNZ) aparece impresso; os outros (e "Total") somem */
+    .seg.empresa button:not(.on){display:none!important}
     section.card{box-shadow:none;border:1px solid #ccc}
     .chip-filtro button{display:none}
     /* em vez de deixar o container de rolagem horizontal desenhar a barra de scroll
@@ -183,7 +190,7 @@
         <button data-per="12">Últ. 12 meses</button>
       </div>
       <div class="seg meses" id="seg-meses"></div>
-      <input type="text" id="busca-cliente" class="busca-cliente" placeholder="🔎 Buscar cliente…">
+      <input type="text" id="busca-cliente" class="busca-cliente" placeholder="🔎 Buscar cliente… (separe por vírgula p/ vários)">
       <div class="statusbar" id="statusbar">carregando…</div>
     </div>
     <h2>Indicador de Entregas — Prazo x Real</h2>
@@ -229,10 +236,16 @@ function limparFiltroTabela(){
 
 // Busca por cliente é independente do Período (é uma consulta pontual, não um recorte do
 // relatório) — olha os 12 meses inteiros carregados, só respeitando a Empresa selecionada.
+// Separado por vírgula = mais de um cliente na mesma busca (ex: "gonelli, joaquim") — casa se
+// bater com QUALQUER um dos termos.
+function termosBusca(termo){
+  return (termo||'').split(',').map(t => t.trim()).filter(Boolean);
+}
 function filtrarPorCliente(termo){
-  const t = termo.toLowerCase();
+  const termos = termosBusca(termo).map(t => t.toLowerCase());
+  if(!termos.length) return [];
   return TODOS_PEDIDOS.filter(p => (!empresa || p.empresa === empresa) &&
-    (((p.cliente||'').toLowerCase().includes(t)) || ((p.fantasia||'').toLowerCase().includes(t)))
+    termos.some(t => ((p.cliente||'').toLowerCase().includes(t)) || ((p.fantasia||'').toLowerCase().includes(t)))
   ).sort((a,b) => b.data_pedido < a.data_pedido ? -1 : (b.data_pedido > a.data_pedido ? 1 : 0));
 }
 
@@ -240,7 +253,10 @@ function renderResumoCliente(lista){
   const comEfetivo = lista.filter(p => p.efetivo);
   const atrasados = comEfetivo.filter(p => p.atraso_dias > 0);
   const noPrazo = comEfetivo.length - atrasados.length;
-  const pendentes = lista.length - comEfetivo.length;
+  // Só conta como "ainda sem entrega" pedido recente (a partir de 01/08) — pedido antigo sem
+  // effective_date é falta de registro histórico, não pendência de verdade (mesmo critério
+  // já usado no card "Pedidos Pendentes" — ver DATA_INICIO_CONTROLE_ENTREGA/ehPendenteConfiavel).
+  const pendentes = lista.filter(p => ehPendenteConfiavel(p)).length;
   // Atraso médio = só entre quem atrasou de verdade — cada entrega é um evento isolado, não dá pra
   // misturar com quem chegou adiantado (senão um atraso grave fica escondido pela média).
   const atrasoMedio = atrasados.length ? atrasados.reduce((s,p) => s + p.atraso_dias, 0) / atrasados.length : null;
@@ -260,10 +276,21 @@ let mesesSelecionados = new Set();
 // Rótulo do período atual: se ela marcou meses específicos (ex: Jul + Ago), usa isso em vez do
 // relativo (Mês atual/3/6/12 meses) — os dois são mutuamente exclusivos.
 function labelPeriodoAtual(){
+  // Busca por cliente ignora o período (olha os 12 meses inteiros) — mostrar "no Mês Atual" nesse
+  // caso é enganoso (parece que só considerou o mês, quando na real pegou tudo).
+  if(buscaCliente) return 'nos Últimos 12 Meses';
   if(mesesSelecionados.size){
     return 'em ' + Array.from(mesesSelecionados).sort((a,b)=>a-b).map(m=>MESES_LABEL[m]).join(' + ');
   }
   return PERIODO_LABEL[periodo];
+}
+
+// Deixa os botões de Período/Meses "apagados" (sem o "on") quando a busca de cliente tá ativa —
+// eles não valem nada nesse modo, e ficar destacado dava a entender (errado) que o filtro
+// de data ainda tava agindo.
+function sincronizarBotoesPeriodo(){
+  $$('#seg-periodo button').forEach(x => x.classList.toggle('on', !buscaCliente && x.dataset.per === periodo));
+  $$('#seg-meses button').forEach(x => x.classList.toggle('on', !buscaCliente && mesesSelecionados.has(Number(x.dataset.mes))));
 }
 
 function businessDaysBetween(d1, d2){
@@ -307,15 +334,41 @@ function filtrarPedidos(){
   }).sort((a,b) => a.data_pedido < b.data_pedido ? -1 : (a.data_pedido > b.data_pedido ? 1 : 0));
 }
 
-// Sufixo mostrado no título dos cards/gráfico quando um recorte (região OU busca de cliente) tá ativo —
-// os dois são mutuamente exclusivos, então só um aparece por vez.
-function sufixoFiltroAtual(){
-  if(filtroRegiao) return ' · ' + filtroRegiao;
-  if(buscaCliente) return ' · "' + buscaCliente + '"';
+// Linha própria (fora dos cards) mostrando o recorte ativo (Região OU busca de cliente, um ou mais) —
+// tirado de dentro do título do card porque com mais de um cliente buscado não cabia direito, e
+// mesmo com um só passava despercebido em texto liso. Chip azul igual o da Lista completa, bem visível
+// tanto na tela quanto no papel impresso.
+function renderLinhaFiltro(){
+  if(filtroRegiao) return `<p class="linha-filtro">Filtrando região: <span class="chip-inline">${filtroRegiao}</span> <button onclick="limparFiltroTabela()">✕ limpar</button></p>`;
+  if(buscaCliente){
+    const termos = termosBusca(buscaCliente);
+    if(!termos.length) return '';
+    return `<p class="linha-filtro">Filtrando cliente${termos.length>1?'s':''}: ${termos.map(t=>`<span class="chip-inline">"${t}"</span>`).join(' ')} <button onclick="limparFiltroTabela()">✕ limpar</button></p>`;
+  }
   return '';
 }
 
-function renderStatsNovos(realizadas, pendentesQtd){
+// Card Curva A: SEMPRE aparece, independente de busca/região ativa — ela quer cobrar a fábrica
+// pelos melhores clientes mesmo sem estar pesquisando ninguém especificamente. Por isso recebe
+// `realizadasBase` (só Empresa+Período, sem o recorte de região/busca de cliente).
+function renderCurvaACard(realizadasBase){
+  const curvaA = realizadasBase.filter(p => p.curva_a);
+  const total = curvaA.length;
+  const noPrazo = curvaA.filter(p => p.atraso_dias <= 0).length;
+  const foraPrazo = total - noPrazo;
+  const pctNoPrazo = total ? Math.round(100*noPrazo/total) : 0;
+  const pctForaPrazo = total ? 100 - pctNoPrazo : 0;
+  return `
+      <div class="stat ${total ? (foraPrazo ? 'critical' : 'good') : ''}">
+        ${total?`<span class="stat-badge">${pctForaPrazo}%</span>`:''}
+        <span class="k">Curva A (Clientes)</span>
+        <span class="v">${pctNoPrazo}%</span>
+        <span class="note">No prazo · ${pctForaPrazo}% fora (${total} entregas)</span>
+        ${total?`<div class="stat-bar"><span style="width:${pctForaPrazo}%"></span></div>`:''}
+      </div>`;
+}
+
+function renderStatsNovos(realizadas, pendentesQtd, realizadasBase){
   const total = realizadas.length;
   const noPrazo = realizadas.filter(p => p.atraso_dias <= 0);
   const foraPrazo = realizadas.filter(p => p.atraso_dias > 0);
@@ -333,7 +386,7 @@ function renderStatsNovos(realizadas, pendentesQtd){
   return `
     <div class="stat-row">
       <div class="stat">
-        <span class="k">Entregas ${labelPeriodoAtual()}${sufixoFiltroAtual()}</span>
+        <span class="k">Entregas ${labelPeriodoAtual()}</span>
         <span class="v">${total}</span>
         <span class="note">Concluídas (data de entrega dentro do período)</span>
       </div>
@@ -356,6 +409,7 @@ function renderStatsNovos(realizadas, pendentesQtd){
         <span class="v">${atrasoMedio>0?'+':''}${Math.round(atrasoMedio)||0}d</span>
         <span class="note">Só entre os que atrasaram (${foraPrazo.length} pedido${foraPrazo.length===1?'':'s'})</span>
       </div>
+      ${renderCurvaACard(realizadasBase || realizadas)}
       <div class="stat" data-goto-pendentes style="cursor:pointer">
         <span class="k">Pedidos Pendentes</span>
         <span class="v">${pendentesQtd}</span>
@@ -411,8 +465,7 @@ function renderEvolucao(realizadas){
     return { mes: MESES_LABEL[m.mes] + (m.ano !== anoAtual ? '/' + String(m.ano).slice(2) : ''), pct: Math.round(100*m.noPrazo/m.total), total: m.total };
   }).map(p => ({...p, pctFora: 100-p.pct}));
 
-  const tituloRegiao = sufixoFiltroAtual();
-  if(pontos.length < 2) return `<p class="tabela-titulo">Evolução da Performance de Entrega${tituloRegiao}</p><div class="empty-msg">Ainda não há meses suficientes com entregas concluídas no período selecionado.</div>`;
+  if(pontos.length < 2) return `<p class="tabela-titulo">Evolução da Performance de Entrega</p><div class="empty-msg">Ainda não há meses suficientes com entregas concluídas no período selecionado.</div>`;
 
   const W = 640, H = 220;
   const padL = 44, padR = 16, padT = 20, padB = 28;
@@ -439,7 +492,7 @@ function renderEvolucao(realizadas){
   let labelsSvg = pontos.map((p,i) => `<text class="axis-label" x="${xFor(i)}" y="${(yFor(p.pct)-10).toFixed(1)}" text-anchor="middle" style="font-weight:700">${p.pct}%</text>`).join('');
 
   return `
-    <p class="tabela-titulo">Evolução da Performance de Entrega${tituloRegiao} (% de entregas por mês, no prazo x fora do prazo)</p>
+    <p class="tabela-titulo">Evolução da Performance de Entrega (% de entregas por mês, no prazo x fora do prazo)</p>
     <div class="legend">
       <span><span class="dot" style="background:var(--good)"></span>No Prazo</span>
       <span><span class="dot" style="background:var(--critical)"></span>Fora do Prazo</span>
@@ -516,6 +569,7 @@ function todosPendentes(){
 }
 
 function renderEntrega(){
+  sincronizarBotoesPeriodo();
   const pedidos = filtrarPedidos();
   const realizadas = filtrarEntregasRealizadas();
   // Clicar numa região OU buscar um cliente agora também recorta os cards e a Evolução (não só a Lista
@@ -540,7 +594,7 @@ function renderEntrega(){
   else if(filtroSoPendentes) baseTabela = todosPendentes();
   else if(filtroRegiao) baseTabela = realizadasFiltradas;
 
-  $('#entrega-body').innerHTML = renderStatsNovos(realizadasFiltradas, pendentesQtd) + renderEvolucao(realizadasFiltradas) + renderRegiao(realizadas) + renderTabela(baseTabela);
+  $('#entrega-body').innerHTML = renderLinhaFiltro() + renderStatsNovos(realizadasFiltradas, pendentesQtd, realizadas) + renderEvolucao(realizadasFiltradas) + renderRegiao(realizadas) + renderTabela(baseTabela);
   syncPrintPageStyle();
 }
 
