@@ -32,7 +32,7 @@
   *{box-sizing:border-box}
   [hidden]{display:none!important}
   body{margin:0;background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;line-height:1.48;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:640px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 16px 60px}
+  .wrap{max-width:1280px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 14px 60px}
 
   .nav-voltar{display:inline-block;margin-bottom:8px;font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;color:var(--series-previsto);text-decoration:none}
   .nav-voltar:hover{text-decoration:underline}
@@ -40,10 +40,24 @@
   .masthead h1{font-family:"Archivo",sans-serif;font-weight:700;font-size:clamp(1.05rem,4vw,1.5rem);letter-spacing:-.01em;margin:0}
   .masthead h1 span{color:var(--ink-soft);font-weight:600}
   .meta{font-size:.72rem;color:var(--ink-soft)}
-  .tagline{margin:6px 0 20px;font-size:.78rem;color:var(--ink-soft);font-style:italic}
-  .aviso{margin:10px 0 24px;font-size:.72rem;color:var(--purple-ink);background:var(--purple-bg);border:1px solid var(--purple-edge);border-radius:8px;padding:8px 12px}
+  .tagline{margin:6px 0 0;font-size:.78rem;color:var(--ink-soft);font-style:italic}
+  .aviso{margin:10px 0 20px;font-size:.72rem;color:var(--purple-ink);background:var(--purple-bg);border:1px solid var(--purple-edge);border-radius:8px;padding:8px 12px}
 
-  .cards{display:flex;flex-direction:column;gap:14px}
+  .btn-imprimir-icone{font-size:1.05rem;line-height:1;padding:5px 9px;border:1px solid var(--hair);border-radius:7px;background:var(--surface);cursor:pointer}
+  .btn-imprimir-icone:hover{background:var(--ground)}
+
+  .controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:18px}
+  .seg{display:inline-flex;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--surface)}
+  .seg button{font:inherit;font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;padding:6px 13px;border:0;border-left:1px solid var(--hair);background:transparent;color:var(--ink-soft);cursor:pointer}
+  .seg button:first-child{border-left:0}
+  .seg button.on{background:var(--series-previsto);color:#fff}
+  .seg.empresa button.on{color:#fff}
+  .seg.empresa button[data-emp=""].on{background:var(--series-previsto)}
+  .seg.empresa button[data-emp="CIAPLAC"].on{background:var(--ciaplac-edge)}
+  .seg.empresa button[data-emp="BNZ METAIS"].on{background:var(--bnz-edge)}
+  .statusbar{font-size:.72rem;color:var(--ink-faint);margin-left:auto}
+
+  .cards{display:flex;flex-direction:column;gap:14px;margin-bottom:8px}
   .fin-card{border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)}
   .fin-card.bnz{background:var(--bnz-bg);border:1px solid var(--bnz-edge)}
   .fin-card.ciaplac{background:var(--ciaplac-bg);border:1px solid var(--ciaplac-edge)}
@@ -61,7 +75,7 @@
   .axis-label{fill:var(--ink-faint);font-size:10px;font-family:"IBM Plex Sans",sans-serif}
   .empty-msg{font-size:.76rem;color:var(--ink-faint);padding:6px 0}
 
-  .tabela-titulo{font-family:"Archivo",sans-serif;font-weight:600;font-size:.9rem;margin:26px 0 8px}
+  .tabela-titulo{font-family:"Archivo",sans-serif;font-weight:600;font-size:.9rem;margin:22px 0 8px}
   .tabela-wrap{overflow-x:auto;border:1px solid var(--hair);border-radius:8px}
   table.tabela-fin{border-collapse:collapse;width:100%;font-size:.72rem}
   table.tabela-fin th,table.tabela-fin td{text-align:left;padding:5px 8px;border-top:1px solid var(--hair);white-space:nowrap}
@@ -85,15 +99,32 @@
 
   .sair{margin-top:22px;font-size:.72rem;color:var(--ink-faint);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
 
-  @media print{ body{display:none} }
+  @media print{
+    @page{
+      size:A4 portrait; margin:9mm;
+      @bottom-right{ content:"página " counter(page) " de " counter(pages); font-family:Arial,sans-serif; font-size:8px; color:#888; }
+    }
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    :root{--shadow:none}
+    html{font-size:10.5px}
+    body{background:#fff}
+    .wrap{max-width:100%;padding:0}
+    .tagline,.nav-voltar,.statusbar,.btn-imprimir-icone,.sair,.login{display:none!important}
+    .seg.empresa button:not(.on){display:none!important}
+    .fin-card{box-shadow:none;border:1px solid #ccc}
+    .chart-wrap,.tabela-wrap{overflow-x:hidden}
+    table.tabela-fin th,table.tabela-fin td{padding:3px 5px}
+    table.tabela-fin td:first-child{max-width:80px;overflow:hidden;text-overflow:ellipsis}
+  }
 </style>
+<style id="print-page-style"></style>
 </head>
 <body>
 
 <div class="login" id="login">
   <form id="login-form" autocomplete="on">
     <h2>Financeiro</h2>
-    <p>Fechamento do mês do representante. Acesso restrito.</p>
+    <p>Fechamento do representante. Acesso restrito.</p>
     <input id="login-user" name="username" type="text" placeholder="usuário" autocapitalize="none" autocomplete="username" required>
     <input id="login-pass" name="password" type="password" placeholder="senha" autocomplete="current-password" required>
     <button type="submit">Entrar</button>
@@ -105,34 +136,59 @@
   <a href="../" class="nav-voltar">← Indicadores</a>
   <header class="masthead">
     <h1>Indicadores <span>— Financeiro</span></h1>
-    <span class="meta" id="mes-ref">—</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button id="btn-imprimir" class="btn-imprimir-icone" onclick="window.print()" title="Imprimir / Salvar PDF">🖨️</button>
+      <div class="meta" id="hoje">—</div>
+    </div>
   </header>
-  <p class="tagline">Fechamento do mês por data efetiva de entrega — o que já foi entregue, pra acompanhar o resultado.</p>
-  <div class="aviso">Uso pessoal do representante. Não é feito pra impressão ou compartilhamento com diretoria.</div>
+  <p class="tagline">Fechamento por data efetiva de entrega — o que já foi entregue, pra acompanhar o resultado.</p>
+  <div class="aviso">Uso pessoal do representante — não repassar para a diretoria.</div>
 
-  <div class="cards">
-    <div class="fin-card ciaplac">
-      <div class="k">CIAPLAC · Faturamento entregue no mês</div>
-      <div class="v" id="v-ciaplac">—</div>
-      <div class="note">Soma dos pedidos com entrega efetiva registrada no mês corrente.</div>
+  <div class="controls">
+    <div class="seg empresa" id="seg-empresa">
+      <button data-emp="" class="on">Total</button>
+      <button data-emp="CIAPLAC">CIAPLAC</button>
+      <button data-emp="BNZ METAIS">BNZ</button>
     </div>
-    <div class="fin-card bnz">
-      <div class="k">BNZ · Peças entregues no mês</div>
-      <div class="v" id="v-bnz">—</div>
-      <div class="note">Sem acessórios, acabamentos, condutores e frete — mesma regra do Copiloto.</div>
+    <div class="seg" id="seg-periodo">
+      <button data-per="mes" class="on">Mês atual</button>
+      <button data-per="3">Últ. 3 meses</button>
+      <button data-per="6">Últ. 6 meses</button>
+      <button data-per="12">Últ. 12 meses</button>
     </div>
-    <div class="fin-card ciaplac">
-      <div class="k chart-k">CIAPLAC · Evolução do faturamento entregue (mês a mês)</div>
-      <div id="chart-ciaplac"><div class="empty-msg">carregando…</div></div>
-    </div>
-    <div class="fin-card bnz">
-      <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
-      <div id="chart-bnz"><div class="empty-msg">carregando…</div></div>
-    </div>
+    <div class="seg meses" id="seg-meses"></div>
+    <div class="statusbar" id="statusbar">carregando…</div>
   </div>
 
-  <div id="lista-ciaplac"></div>
-  <div id="lista-bnz"></div>
+  <div id="sec-ciaplac">
+    <div class="cards">
+      <div class="fin-card ciaplac">
+        <div class="k" id="label-ciaplac-total">CIAPLAC · Faturamento entregue</div>
+        <div class="v" id="v-ciaplac">—</div>
+        <div class="note">Soma dos pedidos com entrega efetiva registrada no período selecionado.</div>
+      </div>
+      <div class="fin-card ciaplac">
+        <div class="k chart-k">CIAPLAC · Evolução do faturamento entregue (mês a mês)</div>
+        <div id="chart-ciaplac"><div class="empty-msg">carregando…</div></div>
+      </div>
+    </div>
+    <div id="lista-ciaplac"></div>
+  </div>
+
+  <div id="sec-bnz">
+    <div class="cards">
+      <div class="fin-card bnz">
+        <div class="k" id="label-bnz-total">BNZ · Peças entregues</div>
+        <div class="v" id="v-bnz">—</div>
+        <div class="note">Sem acessórios, acabamentos, condutores e frete — mesma regra do Copiloto.</div>
+      </div>
+      <div class="fin-card bnz">
+        <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
+        <div id="chart-bnz"><div class="empty-msg">carregando…</div></div>
+      </div>
+    </div>
+    <div id="lista-bnz"></div>
+  </div>
 
   <div class="status" id="status">carregando…</div>
   <button class="sair" id="btn-sair">sair</button>
@@ -141,6 +197,7 @@
 <script>
 const WEBHOOK_URL = "https://auto.ialink.com.br/webhook/painel-vendedor";
 const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 
 let creds = null;
 try { creds = JSON.parse(localStorage.getItem("pv_auth") || "null"); } catch(e){}
@@ -161,23 +218,59 @@ function logout(){
 function fmtMoeda(v){
   return "R$ " + Math.round(v||0).toLocaleString('pt-BR');
 }
-function fmtMes(ym){
-  if(!ym) return "—";
-  const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  const [ano,mes] = ym.split('-');
-  return MESES[Number(mes)-1] + '/' + ano;
-}
-const MESES_LABEL = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-function mesLabel(ym){ return MESES_LABEL[Number(ym.split('-')[1])-1]; }
 function fmtData(iso){
   if(!iso) return '';
   const [a,m,d] = iso.split('-');
   return d+'/'+m+'/'+a;
 }
+function parseISOLocal(s){
+  const [y,m,d] = String(s).slice(0,10).split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+const MESES_LABEL = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const MESES_LABEL_CAP = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function mesLabel(ym){ return MESES_LABEL[Number(ym.split('-')[1])-1]; }
+
+let TODOS_CIAPLAC = [];
+let TODOS_BNZ = [];
+let empresa = '';
+let periodo = 'mes';
+let mesesSelecionados = new Set();
+
+const PERIODO_LABEL = { mes:'no Mês Atual', '3':'nos Últimos 3 Meses', '6':'nos Últimos 6 Meses', '12':'nos Últimos 12 Meses' };
+function labelPeriodoAtual(){
+  if(mesesSelecionados.size){
+    return 'em ' + Array.from(mesesSelecionados).sort((a,b)=>a-b).map(m=>MESES_LABEL_CAP[m]).join(' + ');
+  }
+  return PERIODO_LABEL[periodo];
+}
+
+// Meses específicos (ano corrente) tomam prioridade sobre o período relativo, mesmo padrão do Prazo de Entrega.
+function passaNoPeriodo(dataEntregaIso){
+  if(!dataEntregaIso) return false;
+  const d = parseISOLocal(dataEntregaIso);
+  if(mesesSelecionados.size){
+    return d.getFullYear() === new Date().getFullYear() && mesesSelecionados.has(d.getMonth());
+  }
+  const hoje = new Date();
+  let desde;
+  if(periodo === 'mes'){ desde = new Date(hoje.getFullYear(), hoje.getMonth(), 1); }
+  else { desde = new Date(hoje.getFullYear(), hoje.getMonth() - Number(periodo), hoje.getDate()); }
+  return d >= desde;
+}
+
+function agruparPorMes(lista, campo){
+  const porMes = {};
+  lista.forEach(p => {
+    const mkey = p.data_entrega.slice(0,7);
+    porMes[mkey] = (porMes[mkey] || 0) + (p[campo] || 0);
+  });
+  return Object.keys(porMes).sort().map(mkey => ({ mes: mkey, valor: porMes[mkey] }));
+}
 
 function renderEvolucao(pontosRaw, corVar, fmt){
   if(!pontosRaw || pontosRaw.length < 2){
-    return '<div class="empty-msg">Ainda não há meses suficientes com entregas neste ano.</div>';
+    return '<div class="empty-msg">Ainda não há meses suficientes com entregas no período.</div>';
   }
   const pontos = pontosRaw.map(p => ({ mes: mesLabel(p.mes), valor: p.valor }));
   const max = Math.max(...pontos.map(p=>p.valor), 1);
@@ -200,7 +293,7 @@ function renderEvolucao(pontosRaw, corVar, fmt){
 }
 
 function renderListaCiaplac(pedidos){
-  if(!pedidos || !pedidos.length) return '';
+  if(!pedidos || !pedidos.length) return '<div class="empty-msg">Nenhum pedido entregue no período.</div>';
   const linhas = pedidos.map(p => `<tr>
     <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
     <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
@@ -213,7 +306,7 @@ function renderListaCiaplac(pedidos){
     </table></div>`;
 }
 function renderListaBnz(pedidos){
-  if(!pedidos || !pedidos.length) return '';
+  if(!pedidos || !pedidos.length) return '<div class="empty-msg">Nenhum pedido entregue no período.</div>';
   const linhas = pedidos.map(p => `<tr>
     <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
     <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
@@ -225,6 +318,75 @@ function renderListaBnz(pedidos){
       <tbody>${linhas}</tbody>
     </table></div>`;
 }
+
+function renderFinanceiro(){
+  const showCiaplac = !empresa || empresa === 'CIAPLAC';
+  const showBnz = !empresa || empresa === 'BNZ METAIS';
+  $("#sec-ciaplac").hidden = !showCiaplac;
+  $("#sec-bnz").hidden = !showBnz;
+
+  if(showCiaplac){
+    const lista = TODOS_CIAPLAC.filter(p => passaNoPeriodo(p.data_entrega));
+    const total = lista.reduce((s,p) => s + (p.valor||0), 0);
+    $("#label-ciaplac-total").textContent = 'CIAPLAC · Faturamento entregue ' + labelPeriodoAtual();
+    $("#v-ciaplac").textContent = fmtMoeda(total);
+    $("#chart-ciaplac").innerHTML = renderEvolucao(agruparPorMes(lista,'valor'), '--ciaplac-edge', v => fmtMoeda(v));
+    $("#lista-ciaplac").innerHTML = renderListaCiaplac(lista);
+  }
+  if(showBnz){
+    const lista = TODOS_BNZ.filter(p => passaNoPeriodo(p.data_entrega));
+    const total = lista.reduce((s,p) => s + (p.quantidade||0), 0);
+    $("#label-bnz-total").textContent = 'BNZ · Peças entregues ' + labelPeriodoAtual();
+    $("#v-bnz").textContent = Math.round(total).toLocaleString('pt-BR');
+    $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR'));
+    $("#lista-bnz").innerHTML = renderListaBnz(lista);
+  }
+  syncPrintPageStyle();
+}
+
+// Injeta empresa/período direto na margem nativa da página impressa (mesmo padrão do Prazo de Entrega) -
+// pra ficar óbvio, mesmo folheando o PDF impresso, de qual representada e período se trata.
+function syncPrintPageStyle(){
+  const empLabel = empresa === 'BNZ METAIS' ? 'BNZ METAIS' : (empresa === 'CIAPLAC' ? 'CIAPLAC' : 'BNZ + CIAPLAC (Total)');
+  const perLabel = labelPeriodoAtual() || '';
+  const cabecalho = ('Indicadores - Financeiro · ' + empLabel + ' — ' + perLabel).replace(/"/g,'\\"');
+  const rodape = ($('#status')?.textContent || '').replace(/"/g,'\\"');
+  const el = $('#print-page-style');
+  if(el) el.textContent = '@media print{ @page{ '
+    + '@top-left{ content:"'+cabecalho+'"; font-family:Archivo,Arial,sans-serif; font-weight:700; font-size:10.5px; color:#333; }'
+    + '@bottom-left{ content:"'+rodape+'"; font-family:Arial,sans-serif; font-size:7px; color:#999; }'
+    + ' } }';
+}
+window.addEventListener('beforeprint', syncPrintPageStyle);
+
+(function initSegMeses(){
+  const hoje = new Date();
+  $('#seg-meses').innerHTML = MESES_LABEL_CAP.slice(0, hoje.getMonth()+1)
+    .map((m,i) => `<button data-mes="${i}">${m}</button>`).join('');
+})();
+
+$('#seg-empresa').addEventListener('click', e => {
+  const b = e.target.closest('button[data-emp]'); if(!b) return;
+  empresa = b.dataset.emp;
+  $$('#seg-empresa button').forEach(x => x.classList.toggle('on', x===b));
+  renderFinanceiro();
+});
+$('#seg-periodo').addEventListener('click', e => {
+  const b = e.target.closest('button[data-per]'); if(!b) return;
+  periodo = b.dataset.per;
+  mesesSelecionados.clear();
+  $$('#seg-meses button').forEach(x => x.classList.remove('on'));
+  $$('#seg-periodo button').forEach(x => x.classList.toggle('on', x===b));
+  renderFinanceiro();
+});
+$('#seg-meses').addEventListener('click', e => {
+  const b = e.target.closest('button[data-mes]'); if(!b) return;
+  const m = Number(b.dataset.mes);
+  if(mesesSelecionados.has(m)) mesesSelecionados.delete(m); else mesesSelecionados.add(m);
+  b.classList.toggle('on', mesesSelecionados.has(m));
+  $$('#seg-periodo button').forEach(x => x.classList.remove('on'));
+  renderFinanceiro();
+});
 
 async function load(){
   if(!creds || !creds.user){ showLogin(); return; }
@@ -243,14 +405,12 @@ async function load(){
     const data = await r.json();
     if(data && data.erro){ logout(); showLogin("Usuário ou senha errado."); return; }
     const fin = data.financeiro || {};
-    $("#v-ciaplac").textContent = fmtMoeda(fin.ciaplac_faturamento);
-    $("#v-bnz").textContent = Math.round(fin.bnz_pecas||0).toLocaleString('pt-BR');
-    $("#mes-ref").textContent = fmtMes(fin.mes_referencia);
-    $("#chart-ciaplac").innerHTML = renderEvolucao(fin.ciaplac_evolucao, '--ciaplac-edge', v => fmtMoeda(v));
-    $("#chart-bnz").innerHTML = renderEvolucao(fin.bnz_evolucao, '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR'));
-    $("#lista-ciaplac").innerHTML = renderListaCiaplac(fin.ciaplac_pedidos);
-    $("#lista-bnz").innerHTML = renderListaBnz(fin.bnz_pedidos);
-    $("#status").textContent = "atualizado agora";
+    TODOS_CIAPLAC = fin.ciaplac_pedidos || [];
+    TODOS_BNZ = fin.bnz_pedidos || [];
+    $("#hoje").textContent = new Date().toLocaleDateString('pt-BR');
+    $("#statusbar").textContent = TODOS_CIAPLAC.length + ' pedidos CIAPLAC + ' + TODOS_BNZ.length + ' pedidos BNZ (13 meses)';
+    $("#status").textContent = 'atualizado ' + new Date().toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+    renderFinanceiro();
   }catch(err){
     $("#status").className = "status err";
     $("#status").textContent = "erro ao atualizar: " + (err && err.message || err);
