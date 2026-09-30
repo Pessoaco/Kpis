@@ -80,6 +80,10 @@
   table.tabela-fin{border-collapse:collapse;width:100%;font-size:.72rem}
   table.tabela-fin th,table.tabela-fin td{text-align:left;padding:5px 8px;border-top:1px solid var(--hair);white-space:nowrap}
   table.tabela-fin th{font-family:"Archivo",sans-serif;font-size:.64rem;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-faint);background:var(--surface);border-top:0}
+  table.tabela-fin th.sortable{cursor:pointer;user-select:none}
+  table.tabela-fin th.sortable:hover{color:var(--ink)}
+  table.tabela-fin th.sortable.active{color:var(--ink)}
+  table.tabela-fin th .arrow{display:inline-block;width:.8em;font-size:.7rem;opacity:.6}
   table.tabela-fin td:first-child{color:var(--ink);font-weight:500}
   table.tabela-fin tbody tr:hover{background:var(--ground)}
   table.tabela-fin .num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
@@ -296,29 +300,59 @@ function renderEvolucao(pontosRaw, corVar, fmt){
   </svg></div>`;
 }
 
+const COLS_CIAPLAC = [
+  ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','Estado','str'],
+  ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['valor','Valor','num']
+];
+const COLS_BNZ = [
+  ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','Estado','str'],
+  ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['quantidade','Peças','num']
+];
+let sortCiaplac = { col:'data_entrega', dir:-1 };
+let sortBnz = { col:'data_entrega', dir:-1 };
+
+function ordenarLista(lista, cols, sort){
+  const colDef = cols.find(c => c[0]===sort.col);
+  const tipo = colDef ? colDef[2] : 'str';
+  return [...lista].sort((a,b) => {
+    if(tipo==='num'){ return ((a[sort.col]||0) - (b[sort.col]||0)) * sort.dir; }
+    return String(a[sort.col]||'').localeCompare(String(b[sort.col]||''),'pt-BR') * sort.dir;
+  });
+}
+function theadSort(cols, sort){
+  return '<tr>' + cols.map(c => {
+    const active = sort.col===c[0];
+    const arrow = active ? (sort.dir===1?'▲':'▼') : '';
+    const numCls = c[2]==='num' ? ' num' : '';
+    return `<th class="sortable${active?' active':''}${numCls}" data-col="${c[0]}">${c[1]} <span class="arrow">${arrow}</span></th>`;
+  }).join('') + '</tr>';
+}
+
 function renderListaCiaplac(pedidos){
   if(!pedidos || !pedidos.length) return '<div class="empty-msg">Nenhum pedido entregue no período.</div>';
-  const linhas = pedidos.map(p => `<tr>
+  const ordenados = ordenarLista(pedidos, COLS_CIAPLAC, sortCiaplac);
+  const linhas = ordenados.map(p => `<tr>
     <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
     <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
     <td class="num">${fmtMoeda(p.valor)}</td>
   </tr>`).join('');
   return `<p class="tabela-titulo">CIAPLAC · Lista completa (${pedidos.length} pedidos)</p>
-    <div class="tabela-wrap"><table class="tabela-fin">
-      <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>Estado</th><th>Dt Entrega</th><th>Data Pedido</th><th>Pedido</th><th class="num">Valor</th></tr></thead>
+    <div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac">
+      <thead>${theadSort(COLS_CIAPLAC, sortCiaplac)}</thead>
       <tbody>${linhas}</tbody>
     </table></div>`;
 }
 function renderListaBnz(pedidos){
   if(!pedidos || !pedidos.length) return '<div class="empty-msg">Nenhum pedido entregue no período.</div>';
-  const linhas = pedidos.map(p => `<tr>
+  const ordenados = ordenarLista(pedidos, COLS_BNZ, sortBnz);
+  const linhas = ordenados.map(p => `<tr>
     <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
     <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
     <td class="num">${Math.round(p.quantidade).toLocaleString('pt-BR')}</td>
   </tr>`).join('');
   return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)</p>
-    <div class="tabela-wrap"><table class="tabela-fin">
-      <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>Estado</th><th>Dt Entrega</th><th>Data Pedido</th><th>Pedido</th><th class="num">Peças</th></tr></thead>
+    <div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz">
+      <thead>${theadSort(COLS_BNZ, sortBnz)}</thead>
       <tbody>${linhas}</tbody>
     </table></div>`;
 }
@@ -389,6 +423,20 @@ $('#seg-meses').addEventListener('click', e => {
   if(mesesSelecionados.has(m)) mesesSelecionados.delete(m); else mesesSelecionados.add(m);
   b.classList.toggle('on', mesesSelecionados.has(m));
   $$('#seg-periodo button').forEach(x => x.classList.remove('on'));
+  renderFinanceiro();
+});
+
+// Ordenação clicável nas tabelas de lista completa - clicar de novo na mesma coluna inverte a direção.
+$('#lista-ciaplac').addEventListener('click', e => {
+  const th = e.target.closest('th[data-col]'); if(!th) return;
+  const col = th.dataset.col;
+  if(sortCiaplac.col===col) sortCiaplac.dir *= -1; else sortCiaplac = { col, dir:1 };
+  renderFinanceiro();
+});
+$('#lista-bnz').addEventListener('click', e => {
+  const th = e.target.closest('th[data-col]'); if(!th) return;
+  const col = th.dataset.col;
+  if(sortBnz.col===col) sortBnz.dir *= -1; else sortBnz = { col, dir:1 };
   renderFinanceiro();
 });
 
