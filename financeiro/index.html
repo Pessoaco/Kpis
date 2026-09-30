@@ -58,6 +58,7 @@
   .statusbar{font-size:.72rem;color:var(--ink-faint);margin-left:auto}
 
   .cards{display:flex;flex-direction:column;gap:14px;margin-bottom:8px}
+  #sec-bnz{margin-top:32px}
   .fin-card{border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)}
   .fin-card.bnz{background:var(--bnz-bg);border:1px solid var(--bnz-edge)}
   .fin-card.ciaplac{background:var(--ciaplac-bg);border:1px solid var(--ciaplac-edge)}
@@ -69,6 +70,7 @@
   .fin-card.ciaplac .v{color:var(--ciaplac-ink)}
   .fin-card .note{font-size:.74rem;color:var(--ink-soft);margin-top:4px}
   .fin-card .k.chart-k{margin-bottom:8px}
+  .fin-card.kpi-num{max-width:320px}
 
   .chart-wrap{overflow-x:auto}
   svg.chart{display:block;max-width:640px}
@@ -83,7 +85,8 @@
   table.tabela-fin th.sortable{cursor:pointer;user-select:none}
   table.tabela-fin th.sortable:hover{color:var(--ink)}
   table.tabela-fin th.sortable.active{color:var(--ink)}
-  table.tabela-fin th .arrow{display:inline-block;width:.8em;font-size:.7rem;opacity:.6}
+  table.tabela-fin th .arrow{display:inline-block;width:.8em;font-size:.7rem;opacity:.35}
+  table.tabela-fin th .arrow.active{opacity:1;color:var(--series-previsto)}
   table.tabela-fin td:first-child{color:var(--ink);font-weight:500}
   table.tabela-fin tbody tr:hover{background:var(--ground)}
   table.tabela-fin .num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
@@ -170,7 +173,7 @@
 
   <div id="sec-ciaplac">
     <div class="cards">
-      <div class="fin-card ciaplac">
+      <div class="fin-card ciaplac kpi-num">
         <div class="k" id="label-ciaplac-total">CIAPLAC · Faturamento entregue</div>
         <div class="v" id="v-ciaplac">—</div>
         <div class="note">Soma dos pedidos com entrega efetiva registrada no período selecionado.</div>
@@ -185,7 +188,7 @@
 
   <div id="sec-bnz">
     <div class="cards">
-      <div class="fin-card bnz">
+      <div class="fin-card bnz kpi-num">
         <div class="k" id="label-bnz-total">BNZ · Peças entregues</div>
         <div class="v" id="v-bnz">—</div>
         <div class="note">Sem acessórios, acabamentos, condutores e frete — mesma regra do Copiloto.</div>
@@ -322,9 +325,9 @@ function ordenarLista(lista, cols, sort){
 function theadSort(cols, sort){
   return '<tr>' + cols.map(c => {
     const active = sort.col===c[0];
-    const arrow = active ? (sort.dir===1?'▲':'▼') : '';
+    const arrow = active ? (sort.dir===1?'▲':'▼') : '⇅';
     const numCls = c[2]==='num' ? ' num' : '';
-    return `<th class="sortable${active?' active':''}${numCls}" data-col="${c[0]}">${c[1]} <span class="arrow">${arrow}</span></th>`;
+    return `<th class="sortable${active?' active':''}${numCls}" data-col="${c[0]}">${c[1]} <span class="arrow${active?' active':''}">${arrow}</span></th>`;
   }).join('') + '</tr>';
 }
 
