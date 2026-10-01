@@ -547,7 +547,7 @@ function renderEvolucao(realizadas){
 const COLS_ENTREGA = [
   ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['estado','Estado','str'],
   ['regiao','Região','str'], ['efetivo','Efetivo','str'], ['atraso_dias','Atraso','num'],
-  ['data_pedido','Data Pedido','str'], ['previsto','Previsto','str'], ['pedido','Pedido','str']
+  ['previsto','Previsto','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
 ];
 function ordenarEntrega(lista){
   const colDef = COLS_ENTREGA.find(c => c[0]===sortEntrega.col);
@@ -595,8 +595,8 @@ function renderTabela(pedidosOriginais){
       <td>${p.regiao||'—'}</td>
       <td>${p.efetivo ? fmtDateBR(p.efetivo) : '<span class="pendente">—</span>'}</td>
       <td class="num">${atrasoTxt}</td>
-      <td>${fmtDateBR(p.data_pedido)}</td>
       <td>${fmtDateBR(p.previsto)}</td>
+      <td>${fmtDateBR(p.data_pedido)}</td>
       <td>${p.pedido||'—'}</td>
     </tr>`;
   }).join('');
