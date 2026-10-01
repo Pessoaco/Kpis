@@ -216,7 +216,7 @@
     <h2>Indicador de Entregas — Prazo x Real</h2>
 
     <div id="entrega-body">
-      <div class="loading" id="entrega-loading">carregando indicador…</div>
+      <div class="loading" id="entrega-loading">carregando indicador… (pode levar até 30s)</div>
     </div>
   </section>
 
@@ -408,10 +408,13 @@ function renderStatsNovos(realizadas, pendentesQtd, realizadasBase){
   // Cada entrega é um evento isolado pro cliente — misturar os dois faria um atraso grave (+19d)
   // ser "escondido" por vários adiantamentos, dando a falsa impressão de que tá tudo bem.
   const atrasoMedio = foraPrazo.length ? foraPrazo.reduce((s,p) => s + p.atraso_dias, 0) / foraPrazo.length : 0;
-  // SLA prometido: só mostra o número quando dá pra identificar uma empresa específica
-  // (Total mistura BNZ=3d com CIAPLAC=15d, não faz sentido citar um número só)
-  const slaTxt = empresa && total ? `em até ${realizadas[0].sla_dias} dias úteis` : 'dentro do prazo prometido pela fábrica';
-  const foraTxt = empresa && total ? `Passaram de ${realizadas[0].sla_dias} dias úteis` : 'Passaram do prazo prometido pela fábrica';
+  // SLA prometido: só cita o número de dias quando TODOS os pedidos visíveis têm o mesmo prazo.
+  // A BNZ agora varia por região (3 ou 4 dias úteis) - citar "4 dias" com pedidos de regiões
+  // diferentes misturados seria enganoso, então cai no texto genérico nesse caso. Se ela filtrar
+  // por uma região específica (todos com o mesmo sla_dias), volta a mostrar o número certinho.
+  const todosMesmoSla = total > 0 && realizadas.every(p => p.sla_dias === realizadas[0].sla_dias);
+  const slaTxt = todosMesmoSla ? `em até ${realizadas[0].sla_dias} dias úteis` : 'dentro do prazo previsto';
+  const foraTxt = todosMesmoSla ? `Passaram de ${realizadas[0].sla_dias} dias úteis` : 'Fora do prazo previsto';
 
   return `
     <div class="stat-row">
@@ -434,10 +437,10 @@ function renderStatsNovos(realizadas, pendentesQtd, realizadasBase){
         <span class="note">Entregues ${slaTxt}</span>
         ${total?`<div class="stat-bar"><span style="width:${pctNoPrazo}%"></span></div>`:''}
       </div>
-      <div class="stat ${atrasoMedio>0?'critical':''}">
+      <div class="stat ${atrasoMedio>0?'critical':''}" ${foraPrazo.length?'data-goto-forapraz style="cursor:pointer"':''}>
         <span class="k">Atraso Médio</span>
         <span class="v">${atrasoMedio>0?'+':''}${Math.round(atrasoMedio)||0}d</span>
-        <span class="note">Só entre os que atrasaram (${foraPrazo.length} pedido${foraPrazo.length===1?'':'s'})</span>
+        <span class="note">Só entre os que atrasaram (${foraPrazo.length} pedido${foraPrazo.length===1?'':'s'})${foraPrazo.length?' · <span style="color:var(--critical);font-weight:600">toque para ver ↗</span>':''}</span>
       </div>
       ${renderCurvaACard(realizadasBase || realizadas)}
       <div class="stat" data-goto-pendentes style="cursor:pointer">
@@ -725,8 +728,11 @@ $('#busca-cliente').addEventListener('keydown', e => {
 
 async function load(){
   $('#statusbar').textContent = 'atualizando…';
+  const ctrl = new AbortController();
+  const to = setTimeout(()=>ctrl.abort(), 45000);
   try{
-    const r = await fetch(WEBHOOK_URL, {cache:'no-store'});
+    const r = await fetch(WEBHOOK_URL, {cache:'no-store', signal:ctrl.signal});
+    clearTimeout(to);
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data = await r.json();
     TODOS_PEDIDOS = data.pedidos || [];
@@ -736,12 +742,22 @@ async function load(){
     $('#statusbar').textContent = 'ao vivo · ' + TODOS_PEDIDOS.length + ' pedidos (12 meses)';
     renderEntrega();
   }catch(err){
+    clearTimeout(to);
     // TypeError = fetch nem chegou a ter resposta do servidor (sem internet, DNS, etc) - diferente
-    // de um erro HTTP (que já tem resposta e cai no throw lá em cima).
+    // de um erro HTTP (que já tem resposta e cai no throw lá em cima). AbortError = passou de 45s
+    // sem resposta (n8n/Odoo travado) - antes disso não existia timeout nenhum aqui, por isso
+    // "atualizando…" podia ficar preso na tela pra sempre enquanto o fetch nunca resolvia.
     const semNet = err instanceof TypeError;
-    $('#entrega-loading').hidden = false;
-    $('#entrega-loading').innerHTML = (semNet ? '📡 Sem internet. Este indicador é só online — verifique sua conexão.' : 'Não consegui carregar.') + ' <button onclick="load()">Tentar de novo</button>';
-    $('#statusbar').textContent = semNet ? '📡 sem internet — este indicador é só online' : 'erro ao carregar';
+    const demorou = err.name === 'AbortError';
+    // #entrega-loading só existe antes do primeiro renderEntrega() bem-sucedido (o innerHTML dele é
+    // substituído, não só escondido) - numa falha depois disso ele já não existe mais no DOM. Sem essa
+    // checagem, o .hidden/.innerHTML abaixo quebrava com erro e travava o texto do statusbar também.
+    const loadingEl = $('#entrega-loading');
+    if(loadingEl){
+      loadingEl.hidden = false;
+      loadingEl.innerHTML = (semNet ? '📡 Sem internet. Este indicador é só online — verifique sua conexão.' : demorou ? 'Demorou demais pra responder.' : 'Não consegui carregar.') + ' <button onclick="load()">Tentar de novo</button>';
+    }
+    $('#statusbar').textContent = semNet ? '📡 sem internet — este indicador é só online' : demorou ? 'sem resposta (timeout)' : 'erro ao carregar';
   }
 }
 
