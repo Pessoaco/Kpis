@@ -127,10 +127,10 @@
     table.tabela-fin th:nth-child(2){width:14%}
     table.tabela-fin th:nth-child(3){width:12%}
     table.tabela-fin th:nth-child(4){width:6%}
-    table.tabela-fin th:nth-child(5){width:11%}
+    table.tabela-fin th:nth-child(5){width:16%}
     table.tabela-fin th:nth-child(6){width:11%}
-    table.tabela-fin th:nth-child(7){width:10%}
-    table.tabela-fin th:nth-child(8){width:16%}
+    table.tabela-fin th:nth-child(7){width:11%}
+    table.tabela-fin th:nth-child(8){width:10%}
   }
 </style>
 <style id="print-page-style"></style>
@@ -310,11 +310,11 @@ function renderEvolucao(pontosRaw, corVar, fmt){
 
 const COLS_CIAPLAC = [
   ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','Estado','str'],
-  ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['valor','Valor','num']
+  ['valor','Valor','num'], ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
 ];
 const COLS_BNZ = [
   ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','Estado','str'],
-  ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['quantidade','Peças','num']
+  ['quantidade','Peças','num'], ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
 ];
 let sortCiaplac = { col:'data_entrega', dir:-1 };
 let sortBnz = { col:'data_entrega', dir:-1 };
@@ -341,8 +341,8 @@ function renderListaCiaplac(pedidos){
   const ordenados = ordenarLista(pedidos, COLS_CIAPLAC, sortCiaplac);
   const linhas = ordenados.map(p => `<tr>
     <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
-    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
     <td class="num">${fmtMoeda(p.valor)}</td>
+    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
   </tr>`).join('');
   return `<p class="tabela-titulo">CIAPLAC · Lista completa (${pedidos.length} pedidos)</p>
     <div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac">
@@ -355,8 +355,8 @@ function renderListaBnz(pedidos){
   const ordenados = ordenarLista(pedidos, COLS_BNZ, sortBnz);
   const linhas = ordenados.map(p => `<tr>
     <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
-    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
     <td class="num">${Math.round(p.quantidade).toLocaleString('pt-BR')}</td>
+    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
   </tr>`).join('');
   return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)</p>
     <div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz">
