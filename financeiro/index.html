@@ -206,7 +206,7 @@
     <div id="lista-bnz"></div>
   </div>
 
-  <div class="status" id="status">carregando…</div>
+  <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
 </div>
 
@@ -453,7 +453,7 @@ async function load(){
   $("#login").hidden = true;
   $("#content").hidden = false;
   $("#status").className = "status";
-  $("#status").textContent = "carregando…";
+  $("#status").textContent = "carregando… (pode levar até 30s)";
   const ctrl = new AbortController();
   const to = setTimeout(()=>ctrl.abort(), 45000);
   try{
