@@ -314,7 +314,11 @@ function labelPeriodoAtual(){
 // eles não valem nada nesse modo, e ficar destacado dava a entender (errado) que o filtro
 // de data ainda tava agindo.
 function sincronizarBotoesPeriodo(){
-  $$('#seg-periodo button').forEach(x => x.classList.toggle('on', !buscaCliente && x.dataset.per === periodo));
+  // Meses específicos e período relativo (Mês atual/Últ. X meses) são mutuamente exclusivos - sem o
+  // "!mesesSelecionados.size" aqui, todo re-render repintava "Mês atual" de azul por cima da seleção
+  // de meses, porque a variável `periodo` continua valendo "mes" nos bastidores mesmo quando ela clica
+  // em meses específicos (só quem manda de verdade é mesesSelecionados, mas o botão não refletia isso).
+  $$('#seg-periodo button').forEach(x => x.classList.toggle('on', !buscaCliente && !mesesSelecionados.size && x.dataset.per === periodo));
   $$('#seg-meses button').forEach(x => x.classList.toggle('on', !buscaCliente && mesesSelecionados.has(Number(x.dataset.mes))));
 }
 
