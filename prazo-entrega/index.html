@@ -132,6 +132,11 @@
   table.tabela-entrega{border-collapse:collapse;width:100%;font-size:.71rem}
   table.tabela-entrega th,table.tabela-entrega td{text-align:left;padding:5px 8px;border-top:1px solid var(--hair);white-space:nowrap}
   table.tabela-entrega th{font-family:"Archivo",sans-serif;font-size:.66rem;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-faint);background:var(--surface);position:sticky;top:0;border-top:0}
+  table.tabela-entrega th.sortable{cursor:pointer;user-select:none}
+  table.tabela-entrega th.sortable:hover{color:var(--ink)}
+  table.tabela-entrega th.sortable.active{color:var(--ink)}
+  table.tabela-entrega th .arrow{display:inline-block;width:.8em;font-size:.7rem;opacity:.35}
+  table.tabela-entrega th .arrow.active{opacity:1;color:var(--series-previsto)}
   table.tabela-entrega td:first-child{color:var(--ink);font-weight:500}
   table.tabela-entrega tbody tr:hover{background:var(--ground)}
   table.tabela-entrega .num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
@@ -239,11 +244,16 @@ let empresa = '';
 let periodo = 'mes';
 let filtroRegiao = null;
 let filtroSoPendentes = false;
+let filtroCurvaA = false;
+let filtroForaPrazo = false;
 let buscaCliente = '';
+let sortEntrega = { col:'data_pedido', dir:-1 };
 
 function limparFiltroTabela(){
   filtroRegiao = null;
   filtroSoPendentes = false;
+  filtroCurvaA = false;
+  filtroForaPrazo = false;
   buscaCliente = '';
   const inp = $('#busca-cliente'); if(inp) inp.value = '';
   renderEntrega();
@@ -378,13 +388,13 @@ function renderCurvaACard(realizadasBase){
   // Percentual sempre junto do próprio rótulo, numa pílula colorida (mesma estética do stat-badge
   // usado nos outros cards) — não um badge solto lá em cima, nem texto colorido sem "moldura".
   return `
-      <div class="stat">
+      <div class="stat" data-goto-curvaa style="cursor:pointer">
         <span class="k">Principais Clientes</span>
         <div class="curva-a-linhas">
           <span class="linha"><span class="pill good">${pctNoPrazo}%</span> No Prazo</span>
           <span class="linha"><span class="pill critical">${pctForaPrazo}%</span> Fora do Prazo</span>
         </div>
-        <span class="note">Curva A · top 20% dos clientes (12m) · ${total} entrega${total===1?'':'s'}</span>
+        <span class="note">Curva A · top 20% dos clientes (12m) · ${total} entrega${total===1?'':'s'}<br><span style="color:var(--series-previsto);font-weight:600">toque para ver na lista ↗</span></span>
       </div>`;
 }
 
@@ -410,11 +420,11 @@ function renderStatsNovos(realizadas, pendentesQtd, realizadasBase){
         <span class="v">${total}</span>
         <span class="note">Concluídas (data de entrega dentro do período)</span>
       </div>
-      <div class="stat ${foraPrazo.length?'critical':''}">
+      <div class="stat ${foraPrazo.length?'critical':''}" ${foraPrazo.length?'data-goto-forapraz style="cursor:pointer"':''}>
         ${total?`<span class="stat-badge">${pctForaPrazo}%</span>`:''}
         <span class="k">Fora do Prazo</span>
         <span class="v">${foraPrazo.length}</span>
-        <span class="note">${foraTxt}</span>
+        <span class="note">${foraTxt}${foraPrazo.length?' · <span style="color:var(--critical);font-weight:600">toque para ver ↗</span>':''}</span>
         ${total?`<div class="stat-bar"><span style="width:${pctForaPrazo}%"></span></div>`:''}
       </div>
       <div class="stat good">
@@ -531,13 +541,36 @@ function renderEvolucao(realizadas){
     </div>`;
 }
 
-function renderTabela(pedidos){
+const COLS_ENTREGA = [
+  ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['estado','Estado','str'],
+  ['regiao','Região','str'], ['efetivo','Efetivo','str'], ['atraso_dias','Atraso','num'],
+  ['data_pedido','Data Pedido','str'], ['previsto','Previsto','str'], ['pedido','Pedido','str']
+];
+function ordenarEntrega(lista){
+  const colDef = COLS_ENTREGA.find(c => c[0]===sortEntrega.col);
+  const tipo = colDef ? colDef[2] : 'str';
+  return [...lista].sort((a,b) => {
+    if(tipo==='num'){ return ((a.atraso_dias ?? -9999) - (b.atraso_dias ?? -9999)) * sortEntrega.dir; }
+    return String(a[sortEntrega.col]||'').localeCompare(String(b[sortEntrega.col]||''),'pt-BR') * sortEntrega.dir;
+  });
+}
+function theadEntregaSort(){
+  return '<tr>' + COLS_ENTREGA.map(c => {
+    const active = sortEntrega.col===c[0];
+    const arrow = active ? (sortEntrega.dir===1?'▲':'▼') : '⇅';
+    const numCls = c[2]==='num' ? ' num' : '';
+    return `<th class="sortable${active?' active':''}${numCls}" data-col="${c[0]}">${c[1]} <span class="arrow${active?' active':''}">${arrow}</span></th>`;
+  }).join('') + '</tr>';
+}
+
+function renderTabela(pedidosOriginais){
+  const pedidos = ordenarEntrega(pedidosOriginais);
 
   let chipFiltro = '';
   if(buscaCliente){
     chipFiltro = `<span class="chip-filtro">Cliente: ${buscaCliente} <button onclick="limparFiltroTabela()">✕ limpar</button></span>`;
-  } else if(filtroSoPendentes || filtroRegiao){
-    const txt = filtroSoPendentes ? 'Só pedidos pendentes' : `Região: ${filtroRegiao}`;
+  } else if(filtroSoPendentes || filtroRegiao || filtroCurvaA || filtroForaPrazo){
+    const txt = filtroSoPendentes ? 'Só pedidos pendentes' : filtroCurvaA ? 'Curva A · Principais Clientes' : filtroForaPrazo ? 'Fora do Prazo' : `Região: ${filtroRegiao}`;
     chipFiltro = `<span class="chip-filtro">${txt} <button onclick="limparFiltroTabela()">✕ limpar</button></span>`;
   }
   const resumo = buscaCliente ? renderResumoCliente(pedidos) : '';
@@ -569,7 +602,7 @@ function renderTabela(pedidos){
     ${resumo}
     <div class="tabela-wrap">
       <table class="tabela-entrega">
-        <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>Estado</th><th>Região</th><th>Efetivo</th><th>Atraso</th><th>Data Pedido</th><th>Previsto</th><th>Pedido</th></tr></thead>
+        <thead>${theadEntregaSort()}</thead>
         <tbody>${linhas}</tbody>
       </table>
     </div>`;
@@ -613,6 +646,8 @@ function renderEntrega(){
   if(buscaCliente) baseTabela = filtrarPorCliente(buscaCliente);
   else if(filtroSoPendentes) baseTabela = todosPendentes();
   else if(filtroRegiao) baseTabela = realizadasFiltradas;
+  else if(filtroCurvaA) baseTabela = pedidos.filter(p => p.curva_a);
+  else if(filtroForaPrazo) baseTabela = realizadasFiltradas.filter(p => p.atraso_dias > 0);
 
   $('#entrega-body').innerHTML = renderLinhaFiltro() + renderStatsNovos(realizadasFiltradas, pendentesQtd, realizadas) + renderEvolucao(realizadasFiltradas) + renderRegiao(realizadas) + renderTabela(baseTabela);
   syncPrintPageStyle();
@@ -641,7 +676,7 @@ window.addEventListener('beforeprint', syncPrintPageStyle);
 document.addEventListener('click', e => {
   const linhaRegiao = e.target.closest('[data-regiao]');
   if(linhaRegiao){
-    filtroSoPendentes = false; buscaCliente = ''; const inp1 = $('#busca-cliente'); if(inp1) inp1.value = '';
+    filtroSoPendentes = false; filtroCurvaA = false; filtroForaPrazo = false; buscaCliente = ''; const inp1 = $('#busca-cliente'); if(inp1) inp1.value = '';
     filtroRegiao = linhaRegiao.dataset.regiao;
     renderEntrega();
     $('#tabela-completa')?.scrollIntoView({behavior:'smooth', block:'start'});
@@ -649,16 +684,39 @@ document.addEventListener('click', e => {
   }
   const cardPendentes = e.target.closest('[data-goto-pendentes]');
   if(cardPendentes){
-    filtroRegiao = null; buscaCliente = ''; const inp2 = $('#busca-cliente'); if(inp2) inp2.value = '';
+    filtroRegiao = null; filtroCurvaA = false; filtroForaPrazo = false; buscaCliente = ''; const inp2 = $('#busca-cliente'); if(inp2) inp2.value = '';
     filtroSoPendentes = true;
     renderEntrega();
     $('#tabela-completa')?.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+  const cardCurvaA = e.target.closest('[data-goto-curvaa]');
+  if(cardCurvaA){
+    filtroRegiao = null; filtroSoPendentes = false; filtroForaPrazo = false; buscaCliente = ''; const inp3 = $('#busca-cliente'); if(inp3) inp3.value = '';
+    filtroCurvaA = true;
+    renderEntrega();
+    $('#tabela-completa')?.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+  const cardForaPrazo = e.target.closest('[data-goto-forapraz]');
+  if(cardForaPrazo){
+    filtroRegiao = null; filtroSoPendentes = false; filtroCurvaA = false; buscaCliente = ''; const inp4 = $('#busca-cliente'); if(inp4) inp4.value = '';
+    filtroForaPrazo = true;
+    renderEntrega();
+    $('#tabela-completa')?.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+  const th = e.target.closest('table.tabela-entrega th[data-col]');
+  if(th){
+    const col = th.dataset.col;
+    if(sortEntrega.col===col) sortEntrega.dir *= -1; else sortEntrega = { col, dir:1 };
+    renderEntrega();
   }
 });
 
 $('#busca-cliente').addEventListener('input', e => {
   buscaCliente = e.target.value.trim();
-  if(buscaCliente){ filtroRegiao = null; filtroSoPendentes = false; }
+  if(buscaCliente){ filtroRegiao = null; filtroSoPendentes = false; filtroCurvaA = false; filtroForaPrazo = false; }
   renderEntrega();
 });
 $('#busca-cliente').addEventListener('keydown', e => {
@@ -690,7 +748,7 @@ async function load(){
 $('#seg-empresa').addEventListener('click', e => {
   const b = e.target.closest('button[data-emp]'); if(!b) return;
   empresa = b.dataset.emp;
-  filtroRegiao = null; filtroSoPendentes = false;
+  filtroRegiao = null; filtroSoPendentes = false; filtroCurvaA = false; filtroForaPrazo = false;
   $$('#seg-empresa button').forEach(x => x.classList.toggle('on', x===b));
   renderEntrega();
 });
@@ -699,7 +757,7 @@ $('#seg-periodo').addEventListener('click', e => {
   periodo = b.dataset.per;
   mesesSelecionados.clear();
   $$('#seg-meses button').forEach(x => x.classList.remove('on'));
-  filtroRegiao = null; filtroSoPendentes = false;
+  filtroRegiao = null; filtroSoPendentes = false; filtroCurvaA = false; filtroForaPrazo = false;
   $$('#seg-periodo button').forEach(x => x.classList.toggle('on', x===b));
   renderEntrega();
 });
@@ -717,7 +775,7 @@ $('#seg-meses').addEventListener('click', e => {
   if(mesesSelecionados.has(m)) mesesSelecionados.delete(m); else mesesSelecionados.add(m);
   b.classList.toggle('on', mesesSelecionados.has(m));
   $$('#seg-periodo button').forEach(x => x.classList.remove('on'));
-  filtroRegiao = null; filtroSoPendentes = false;
+  filtroRegiao = null; filtroSoPendentes = false; filtroCurvaA = false; filtroForaPrazo = false;
   buscaCliente = ''; const inpM = $('#busca-cliente'); if(inpM) inpM.value = '';
   renderEntrega();
 });
