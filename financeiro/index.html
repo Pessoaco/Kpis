@@ -9,7 +9,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 
 <style>
   :root{
@@ -89,7 +89,7 @@
   table.tabela-fin th .arrow.active{opacity:1;color:var(--series-previsto)}
   table.tabela-fin td:first-child{color:var(--ink);font-weight:500}
   table.tabela-fin tbody tr:hover{background:var(--ground)}
-  table.tabela-fin .num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
+  table.tabela-fin .num{font-family:"IBM Plex Mono",monospace;font-weight:400;font-variant-numeric:tabular-nums;text-align:right}
 
   .status{margin-top:18px;font-size:.72rem;color:var(--ink-faint)}
   .status.err{color:var(--ciaplac-ink)}
@@ -116,16 +116,21 @@
     html{font-size:10.5px}
     body{background:#fff}
     .wrap{max-width:100%;padding:0}
-    .tagline,.nav-voltar,.statusbar,.btn-imprimir-icone,.sair,.login{display:none!important}
+    .tagline,.nav-voltar,.statusbar,.btn-imprimir-icone,.sair,.login,.aviso{display:none!important}
     .seg.empresa button:not(.on){display:none!important}
     .fin-card{box-shadow:none;border:1px solid #ccc}
     .chart-wrap,.tabela-wrap{overflow-x:hidden}
     svg.chart{max-width:100%}
     table.tabela-fin{table-layout:fixed;width:100%}
     table.tabela-fin th,table.tabela-fin td{padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    table.tabela-fin td:first-child,table.tabela-fin th:first-child{max-width:70px}
-    table.tabela-fin td:nth-child(2),table.tabela-fin th:nth-child(2){max-width:60px}
-    table.tabela-fin td:nth-child(3),table.tabela-fin th:nth-child(3){max-width:55px}
+    table.tabela-fin th:nth-child(1){width:20%}
+    table.tabela-fin th:nth-child(2){width:14%}
+    table.tabela-fin th:nth-child(3){width:12%}
+    table.tabela-fin th:nth-child(4){width:6%}
+    table.tabela-fin th:nth-child(5){width:11%}
+    table.tabela-fin th:nth-child(6){width:11%}
+    table.tabela-fin th:nth-child(7){width:10%}
+    table.tabela-fin th:nth-child(8){width:16%}
   }
 </style>
 <style id="print-page-style"></style>
@@ -176,7 +181,7 @@
       <div class="fin-card ciaplac kpi-num">
         <div class="k" id="label-ciaplac-total">CIAPLAC · Faturamento entregue</div>
         <div class="v" id="v-ciaplac">—</div>
-        <div class="note">Soma dos pedidos com entrega efetiva registrada no período selecionado. Sem acessórios, acabamentos, condutores e frete — mesma regra do Copiloto.</div>
+        <div class="note">Soma dos pedidos com entrega efetiva registrada no período selecionado. Sem acessórios, acabamentos, condutores e frete.</div>
       </div>
       <div class="fin-card ciaplac">
         <div class="k chart-k">CIAPLAC · Evolução do faturamento entregue (mês a mês)</div>
@@ -191,7 +196,7 @@
       <div class="fin-card bnz kpi-num">
         <div class="k" id="label-bnz-total">BNZ · Peças entregues</div>
         <div class="v" id="v-bnz">—</div>
-        <div class="note">Sem acessórios, acabamentos, condutores e frete — mesma regra do Copiloto.</div>
+        <div class="note">Sem acessórios, acabamentos, condutores e frete.</div>
       </div>
       <div class="fin-card bnz">
         <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
