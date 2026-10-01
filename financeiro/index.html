@@ -472,8 +472,11 @@ async function load(){
     $("#status").textContent = 'atualizado ' + new Date().toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
     renderFinanceiro();
   }catch(err){
+    // TypeError = fetch nem chegou a ter resposta do servidor (sem internet, DNS, etc) - diferente
+    // de um erro HTTP (que já tem resposta e cai no throw lá em cima).
+    const semNet = err instanceof TypeError;
     $("#status").className = "status err";
-    $("#status").textContent = "erro ao atualizar: " + (err && err.message || err);
+    $("#status").textContent = semNet ? "📡 Sem internet — este painel é só online. Verifique sua conexão." : "erro ao atualizar: " + (err && err.message || err);
   }
 }
 
