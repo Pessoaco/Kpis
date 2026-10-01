@@ -678,8 +678,12 @@ async function load(){
     $('#statusbar').textContent = 'ao vivo · ' + TODOS_PEDIDOS.length + ' pedidos (12 meses)';
     renderEntrega();
   }catch(err){
-    $('#entrega-loading').innerHTML = 'Não consegui carregar. <button onclick="load()">Tentar de novo</button>';
-    $('#statusbar').textContent = 'erro ao carregar';
+    // TypeError = fetch nem chegou a ter resposta do servidor (sem internet, DNS, etc) - diferente
+    // de um erro HTTP (que já tem resposta e cai no throw lá em cima).
+    const semNet = err instanceof TypeError;
+    $('#entrega-loading').hidden = false;
+    $('#entrega-loading').innerHTML = (semNet ? '📡 Sem internet. Este indicador é só online — verifique sua conexão.' : 'Não consegui carregar.') + ' <button onclick="load()">Tentar de novo</button>';
+    $('#statusbar').textContent = semNet ? '📡 sem internet — este indicador é só online' : 'erro ao carregar';
   }
 }
 
