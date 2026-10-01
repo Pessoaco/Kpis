@@ -42,6 +42,7 @@
   .meta{font-size:.72rem;color:var(--ink-soft)}
   .tagline{margin:6px 0 0;font-size:.78rem;color:var(--ink-soft);font-style:italic}
   .aviso{margin:10px 0 20px;font-size:.72rem;color:var(--purple-ink);background:var(--purple-bg);border:1px solid var(--purple-edge);border-radius:8px;padding:8px 12px}
+  .aviso-data{margin:0 0 20px;font-size:.72rem;color:var(--series-previsto);border-left:3px solid var(--series-previsto);padding:4px 10px}
 
   .btn-imprimir-icone{font-size:1.05rem;line-height:1;padding:5px 9px;border:1px solid var(--hair);border-radius:7px;background:var(--surface);cursor:pointer}
   .btn-imprimir-icone:hover{background:var(--ground)}
@@ -158,6 +159,7 @@
     </div>
   </header>
   <p class="tagline">Fechamento por data efetiva de entrega — o que já foi entregue, pra acompanhar o resultado.</p>
+  <div class="aviso-data">⚠ Estes números são pela <b>data de entrega</b>, não pela data de venda — podem ser diferentes do total de vendas do mês que aparece na Odoo.</div>
   <div class="aviso">Uso pessoal do representante — não repassar para a diretoria.</div>
 
   <div class="controls">
@@ -181,7 +183,7 @@
       <div class="fin-card ciaplac kpi-num">
         <div class="k" id="label-ciaplac-total">CIAPLAC · Faturamento entregue</div>
         <div class="v" id="v-ciaplac">—</div>
-        <div class="note">Soma dos pedidos com entrega efetiva registrada no período selecionado. Inclui acessórios e acabamentos — só não inclui frete.</div>
+        <div class="note">Soma dos pedidos com entrega efetiva registrada no período selecionado. Não inclui frete.</div>
       </div>
       <div class="fin-card ciaplac">
         <div class="k chart-k">CIAPLAC · Evolução do faturamento entregue (mês a mês)</div>
