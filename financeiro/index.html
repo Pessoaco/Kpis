@@ -41,7 +41,6 @@
   .masthead h1 span{color:var(--ink-soft);font-weight:600}
   .meta{font-size:.72rem;color:var(--ink-soft)}
   .tagline{margin:6px 0 0;font-size:.78rem;color:var(--ink-soft);font-style:italic}
-  .aviso{margin:10px 0 20px;font-size:.72rem;color:var(--purple-ink);background:var(--purple-bg);border:1px solid var(--purple-edge);border-radius:8px;padding:8px 12px}
   .aviso-data{margin:0 0 20px;font-size:.72rem;color:var(--series-previsto);border-left:3px solid var(--series-previsto);padding:4px 10px}
 
   .btn-imprimir-icone{font-size:1.05rem;line-height:1;padding:5px 9px;border:1px solid var(--hair);border-radius:7px;background:var(--surface);cursor:pointer}
@@ -117,9 +116,12 @@
     html{font-size:10.5px}
     body{background:#fff}
     .wrap{max-width:100%;padding:0}
-    .tagline,.nav-voltar,.statusbar,.btn-imprimir-icone,.sair,.login,.aviso{display:none!important}
+    .tagline,.nav-voltar,.statusbar,.btn-imprimir-icone,.sair,.login{display:none!important}
     .seg.empresa button:not(.on){display:none!important}
-    .fin-card{box-shadow:none;border:1px solid #ccc}
+    .masthead{border-bottom-width:1px}
+    .controls{gap:4px 8px}
+    .seg button{padding:3px 7px;font-size:.66rem}
+    .fin-card{box-shadow:none;border:1px solid #ccc;break-inside:avoid;page-break-inside:avoid}
     .chart-wrap,.tabela-wrap{overflow-x:hidden}
     svg.chart{max-width:100%}
     table.tabela-fin{table-layout:fixed;width:100%}
@@ -160,7 +162,6 @@
   </header>
   <p class="tagline">Fechamento por data efetiva de entrega — o que já foi entregue, pra acompanhar o resultado.</p>
   <div class="aviso-data">⚠ Estes números são pela <b>data de entrega</b>, não pela data de venda — podem ser diferentes do total de vendas do mês que aparece na Odoo.</div>
-  <div class="aviso">Uso pessoal do representante — não repassar para a diretoria.</div>
 
   <div class="controls">
     <div class="seg empresa" id="seg-empresa">
