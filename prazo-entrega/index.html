@@ -87,6 +87,7 @@
   .stat.critical .v{color:var(--critical)}
   .stat.good .v{color:var(--good)}
   .stat .note{font-size:.68rem;color:var(--ink-faint)}
+  .stat .v2{font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:1.05rem;color:var(--ink);font-variant-numeric:tabular-nums}
   .curva-a-linhas{display:flex;flex-direction:column;gap:4px;margin:3px 0}
   .curva-a-linhas .linha{display:flex;align-items:center;gap:6px;font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;color:var(--ink-soft)}
   .curva-a-linhas .pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:.68rem;padding:2px 8px;border-radius:999px;color:#fff}
@@ -402,7 +403,8 @@ function renderCurvaACard(realizadasBase){
       </div>`;
 }
 
-function renderStatsNovos(realizadas, pendentesQtd, realizadasBase){
+const fmtBRLp = n => Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+function renderStatsNovos(realizadas, pendentesQtd, realizadasBase, pendentesValor){
   const total = realizadas.length;
   const noPrazo = realizadas.filter(p => p.atraso_dias <= 0);
   const foraPrazo = realizadas.filter(p => p.atraso_dias > 0);
@@ -450,6 +452,7 @@ function renderStatsNovos(realizadas, pendentesQtd, realizadasBase){
       <div class="stat" data-goto-pendentes style="cursor:pointer">
         <span class="k">Pedidos Pendentes</span>
         <span class="v">${pendentesQtd}</span>
+        ${pendentesValor != null ? `<span class="v2">${fmtBRLp(pendentesValor)}</span>` : ''}
         <span class="note">Qualquer data, ainda sem entrega (não segue o período) · <span style="color:var(--series-previsto);font-weight:600">toque para ver ↗</span></span>
       </div>
     </div>`;
@@ -641,9 +644,12 @@ function renderEntrega(){
   if(buscaCliente) realizadasFiltradas = filtrarPorCliente(buscaCliente).filter(p => p.efetivo);
   else if(filtroRegiao) realizadasFiltradas = realizadas.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao);
 
-  let pendentesQtd = todosPendentes().length;
-  if(buscaCliente) pendentesQtd = filtrarPorCliente(buscaCliente).filter(p => ehPendenteConfiavel(p)).length;
-  else if(filtroRegiao) pendentesQtd = todosPendentes().filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao).length;
+  let pendentesLista = todosPendentes();
+  if(buscaCliente) pendentesLista = filtrarPorCliente(buscaCliente).filter(p => ehPendenteConfiavel(p));
+  else if(filtroRegiao) pendentesLista = pendentesLista.filter(p => (p.regiao || 'Sem região cadastrada') === filtroRegiao);
+  const pendentesQtd = pendentesLista.length;
+  // valor (R$) dos pendentes: soma do total dos pedidos. null se o backend ainda não manda o campo (v10 ou anterior).
+  const pendentesValor = pendentesLista.some(p => p.valor != null) ? pendentesLista.reduce((s,p) => s + (p.valor || 0), 0) : null;
 
   // A tabela troca de BASE conforme o filtro clicado: a Lista padrão usa pedidos (filtro por data do
   // PEDIDO, dentro do período); clicar numa Região usa realizadasFiltradas (filtro por data de ENTREGA) —
@@ -656,7 +662,7 @@ function renderEntrega(){
   else if(filtroCurvaA) baseTabela = pedidos.filter(p => p.curva_a);
   else if(filtroForaPrazo) baseTabela = realizadasFiltradas.filter(p => p.atraso_dias > 0);
 
-  $('#entrega-body').innerHTML = renderLinhaFiltro() + renderStatsNovos(realizadasFiltradas, pendentesQtd, realizadas) + renderEvolucao(realizadasFiltradas) + renderRegiao(realizadas) + renderTabela(baseTabela);
+  $('#entrega-body').innerHTML = renderLinhaFiltro() + renderStatsNovos(realizadasFiltradas, pendentesQtd, realizadas, pendentesValor) + renderEvolucao(realizadasFiltradas) + renderRegiao(realizadas) + renderTabela(baseTabela);
   syncPrintPageStyle();
 }
 
