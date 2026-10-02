@@ -241,6 +241,10 @@ function fmtDateBR(s){
 }
 
 let TODOS_PEDIDOS = [];
+// Complementar/Troca ainda sem entrega: ficam fora das métricas de prazo, mas contam nos pendentes
+// (pendente = tudo que falta entregar, de qualquer tipo de pedido)
+let PENDENTES_EXTRAS = [];
+const pedidosParaPendentes = () => TODOS_PEDIDOS.concat(PENDENTES_EXTRAS);
 let empresa = '';
 let periodo = 'mes';
 let filtroRegiao = null;
@@ -270,7 +274,7 @@ function termosBusca(termo){
 function filtrarPorCliente(termo){
   const termos = termosBusca(termo).map(t => t.toLowerCase());
   if(!termos.length) return [];
-  return TODOS_PEDIDOS.filter(p => (!empresa || p.empresa === empresa) &&
+  return pedidosParaPendentes().filter(p => (!empresa || p.empresa === empresa) &&
     termos.some(t => ((p.cliente||'').toLowerCase().includes(t)) || ((p.fantasia||'').toLowerCase().includes(t)))
   ).sort((a,b) => b.data_pedido < a.data_pedido ? -1 : (b.data_pedido > a.data_pedido ? 1 : 0));
 }
@@ -628,7 +632,7 @@ const ehPendenteConfiavel = p => !p.efetivo && p.data_pedido >= DATA_INICIO_CONT
 // Pedidos Pendentes NÃO segue o seletor de Período (ela foi explícita: "independente do prazo que eu
 // clicar" tem que mostrar TUDO que falta entregar) — só respeita a Empresa selecionada, igual a Evolução.
 function todosPendentes(){
-  return TODOS_PEDIDOS.filter(p => (!empresa || p.empresa === empresa) && ehPendenteConfiavel(p));
+  return pedidosParaPendentes().filter(p => (!empresa || p.empresa === empresa) && ehPendenteConfiavel(p));
 }
 
 function renderEntrega(){
@@ -746,6 +750,7 @@ async function load(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data = await r.json();
     TODOS_PEDIDOS = data.pedidos || [];
+    PENDENTES_EXTRAS = data.pendentes_extras || [];
     $('#entrega-loading').hidden = true;
     $('#updated-at').textContent = fmtDateBR((data.atualizado_em||'').slice(0,10)) + ' ' + new Date(data.atualizado_em||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     $('#hoje').textContent = new Date().toLocaleDateString('pt-BR');
