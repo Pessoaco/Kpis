@@ -166,8 +166,9 @@
   <div class="controls">
     <div class="seg empresa" id="seg-empresa">
       <button data-emp="" class="on">Total</button>
-      <button data-emp="CIAPLAC">CIAPLAC</button>
+      <!-- representadas sempre em ordem alfabetica do nome cadastrado na Odoo -->
       <button data-emp="BNZ METAIS">BNZ</button>
+      <button data-emp="CIAPLAC">CIAPLAC</button>
     </div>
     <div class="seg" id="seg-periodo">
       <button data-per="mes" class="on">Mês atual</button>
@@ -177,6 +178,22 @@
     </div>
     <div class="seg meses" id="seg-meses"></div>
     <div class="statusbar" id="statusbar">carregando…</div>
+  </div>
+
+  <!-- secoes das representadas tambem em ordem alfabetica: BNZ METAIS, CIAPLAC -->
+  <div id="sec-bnz">
+    <div class="cards">
+      <div class="fin-card bnz kpi-num">
+        <div class="k" id="label-bnz-total">BNZ · Peças entregues</div>
+        <div class="v" id="v-bnz">—</div>
+        <div class="note">Sem acessórios, acabamentos, condutores e frete.</div>
+      </div>
+      <div class="fin-card bnz">
+        <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
+        <div id="chart-bnz"><div class="empty-msg">carregando…</div></div>
+      </div>
+    </div>
+    <div id="lista-bnz"></div>
   </div>
 
   <div id="sec-ciaplac">
@@ -192,21 +209,6 @@
       </div>
     </div>
     <div id="lista-ciaplac"></div>
-  </div>
-
-  <div id="sec-bnz">
-    <div class="cards">
-      <div class="fin-card bnz kpi-num">
-        <div class="k" id="label-bnz-total">BNZ · Peças entregues</div>
-        <div class="v" id="v-bnz">—</div>
-        <div class="note">Sem acessórios, acabamentos, condutores e frete.</div>
-      </div>
-      <div class="fin-card bnz">
-        <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
-        <div id="chart-bnz"><div class="empty-msg">carregando…</div></div>
-      </div>
-    </div>
-    <div id="lista-bnz"></div>
   </div>
 
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
