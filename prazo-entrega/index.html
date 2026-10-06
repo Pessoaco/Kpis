@@ -200,9 +200,10 @@
   <section class="card" id="card-entrega">
     <div class="controls">
       <div class="seg empresa" id="seg-empresa">
-        <button data-emp="" class="on">Total</button>
+        <!-- representadas sempre em ordem alfabetica do nome cadastrado na Odoo; abre na primeira; Total por ultimo -->
+        <button data-emp="BNZ METAIS" class="on">BNZ</button>
         <button data-emp="CIAPLAC">CIAPLAC</button>
-        <button data-emp="BNZ METAIS">BNZ</button>
+        <button data-emp="">Total</button>
       </div>
       <div class="seg" id="seg-periodo">
         <button data-per="mes" class="on">Mês atual</button>
@@ -245,7 +246,7 @@ let TODOS_PEDIDOS = [];
 // (pendente = tudo que falta entregar, de qualquer tipo de pedido)
 let PENDENTES_EXTRAS = [];
 const pedidosParaPendentes = () => TODOS_PEDIDOS.concat(PENDENTES_EXTRAS);
-let empresa = '';
+let empresa = 'BNZ METAIS'; // abre na primeira representada (ordem alfabetica); Total fica por ultimo
 let periodo = 'mes';
 let filtroRegiao = null;
 let filtroSoPendentes = false;
