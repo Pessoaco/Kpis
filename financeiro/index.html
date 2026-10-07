@@ -90,6 +90,12 @@
   table.tabela-fin td.col-cid{max-width:110px}
   .btn-imprimir-lista{margin-left:10px;font:inherit;font-family:"Archivo",sans-serif;font-weight:600;font-size:.7rem;padding:3px 9px;border:1px solid var(--hair);border-radius:6px;background:var(--surface);color:var(--ink-soft);cursor:pointer;vertical-align:middle}
   .btn-imprimir-lista:hover{color:var(--ink);background:var(--ground)}
+  /* v35: card "emitidos no periodo e nao entregues no periodo" */
+  #lista-bnz-emitidos{margin-top:26px}
+  .nota-emitidos{margin:-4px 0 8px;font-size:.72rem;color:var(--ink-soft)}
+  table.tabela-fin td.col-obs{min-width:180px;white-space:normal;background:var(--ground);outline:none;color:var(--ink)}
+  table.tabela-fin td.col-obs:focus{background:var(--surface);box-shadow:inset 0 0 0 2px var(--series-previsto)}
+  table.tabela-fin td.col-obs:empty::before{content:"anotar…";color:var(--ink-faint)}
 
   .chart-wrap{overflow-x:auto}
   svg.chart{display:block;max-width:640px}
@@ -168,6 +174,15 @@
     body.print-lista #sec-bnz .cards,body.print-lista #sec-ciaplac,body.print-lista .status{display:none!important}
     body.print-lista #sec-bnz{margin-top:0}
     body.print-lista #tabela-bnz th:nth-child(8),body.print-lista #tabela-bnz td:nth-child(8){display:none!important}
+    body.print-lista #tabela-bnz-emitidos th:nth-child(8),body.print-lista #tabela-bnz-emitidos td:nth-child(8){display:none!important}
+    /* tabela "emitidos e nao entregues": 12 colunas, Obs. pode quebrar linha */
+    #tabela-bnz-emitidos th:nth-child(1){width:15%} #tabela-bnz-emitidos th:nth-child(2){width:10%} #tabela-bnz-emitidos th:nth-child(3){width:8%}
+    #tabela-bnz-emitidos th:nth-child(4){width:3%} #tabela-bnz-emitidos th:nth-child(5){width:6%} #tabela-bnz-emitidos th:nth-child(6){width:5%}
+    #tabela-bnz-emitidos th:nth-child(7){width:5%} #tabela-bnz-emitidos th:nth-child(8){width:7%} #tabela-bnz-emitidos th:nth-child(9){width:11%}
+    #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:7%} #tabela-bnz-emitidos th:nth-child(12){width:16%}
+    #tabela-bnz-emitidos td.col-obs{white-space:normal;background:none}
+    #tabela-bnz-emitidos td.col-obs:empty::before{content:""}
+    .nota-emitidos b{font-weight:400}
     body.print-lista #tabela-bnz th:nth-child(1){width:22%} body.print-lista #tabela-bnz th:nth-child(2){width:15%}
     body.print-lista #tabela-bnz th:nth-child(3){width:12%} body.print-lista #tabela-bnz th:nth-child(4){width:4%}
     body.print-lista #tabela-bnz th:nth-child(5){width:7%} body.print-lista #tabela-bnz th:nth-child(6){width:6%}
@@ -200,11 +215,11 @@
     </div>
   </header>
   <p class="tagline">Fechamento por data efetiva de entrega — o que já foi entregue, pra acompanhar o resultado.</p>
-  <div class="aviso-data">⚠ Estes números são pela <b>data de entrega</b>, não pela data de venda — podem ser diferentes do total de vendas do mês que aparece na Odoo.</div>
+  <div class="aviso-data">⚠ Estes números são pela <b>data de entrega</b>, e não pela data de emissão do pedido (data em que o vendedor fechou o pedido).</div>
 
   <div class="controls">
     <div class="seg empresa" id="seg-empresa">
-      <!-- representadas sempre em ordem alfabetica do nome cadastrado na Odoo; abre na primeira; Total por ultimo -->
+      <!-- representadas sempre em ordem alfabetica do nome cadastrado; abre na primeira; Total por ultimo -->
       <button data-emp="BNZ METAIS" class="on">BNZ</button>
       <button data-emp="CIAPLAC">CIAPLAC</button>
       <button data-emp="">Total</button>
@@ -251,6 +266,7 @@
       </div>
     </div>
     <div id="lista-bnz"></div>
+    <div id="lista-bnz-emitidos"></div>
   </div>
 
   <div id="sec-ciaplac">
@@ -306,7 +322,7 @@ function fmtInt(v){
 function fmtData(iso){
   if(!iso) return '';
   const [a,m,d] = iso.split('-');
-  return d+'/'+m+'/'+a;
+  return d+'/'+m+'/'+String(a).slice(-2); // ano com 2 digitos (padrao das tabelas)
 }
 function parseISOLocal(s){
   const [y,m,d] = String(s).slice(0,10).split('-').map(Number);
@@ -318,6 +334,7 @@ function mesLabel(ym){ return MESES_LABEL[Number(ym.split('-')[1])-1]; }
 
 let TODOS_CIAPLAC = [];
 let TODOS_BNZ = [];
+let TODOS_BNZ_PEND = []; // v35: pedidos com saldo a entregar (pedido - entregue)
 let empresa = 'BNZ METAIS'; // abre na primeira representada (ordem alfabetica); Total fica por ultimo
 let periodo = 'mes';
 let mesesSelecionados = new Set();
@@ -452,6 +469,38 @@ function renderListaBnz(pedidos){
     </table></div>`;
 }
 
+// v35: pedidos EMITIDOS no periodo que NAO foram entregues no periodo - entregues depois (ex.: emitido em 29/09,
+// entregue em 01/10) ou ainda com saldo a entregar. A comissao deles entra no mes da entrega; o card serve pra
+// representada conferir o fechamento. A coluna Obs. e livre (fica salva so neste navegador) e sai na impressao.
+function lerObs(pedido){ try { return localStorage.getItem('fin_obs_' + pedido) || ''; } catch(e){ return ''; } }
+function salvarObs(el){ try { localStorage.setItem('fin_obs_' + el.dataset.pedido, el.textContent.trim()); } catch(e){} }
+function escHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderEmitidosForaBnz(){
+  const entreguesDepois = TODOS_BNZ
+    .filter(p => passaNoPeriodo(p.data_pedido) && !passaNoPeriodo(p.data_entrega))
+    .map(p => Object.assign({}, p, { situacao: 'Entregue em ' + fmtData(p.data_entrega) }));
+  const pendentes = TODOS_BNZ_PEND.filter(p => passaNoPeriodo(p.data_pedido));
+  const lista = entreguesDepois.concat(pendentes)
+    .sort((a,b) => a.data_pedido < b.data_pedido ? -1 : (a.data_pedido > b.data_pedido ? 1 : 0));
+  const titulo = `<p class="tabela-titulo">BNZ · Emitidos ${labelPeriodoAtual()} e não entregues no período (${lista.length} pedidos)</p>
+    <p class="nota-emitidos">A comissão destes pedidos entra no fechamento do mês em que forem entregues. Clique em <b>Obs.</b> para anotar.</p>`;
+  if(!lista.length) return titulo + '<div class="empty-msg">Nenhum pedido emitido no período ficou para entregar depois.</div>';
+  const linhas = lista.map(p => `<tr>
+    ${tdsCliente(p)}
+    <td class="num">${fmtInt(p.quantidade)}</td>
+    <td class="num">${fmtInt(p.acessorios)}</td>
+    <td class="num">${fmtInt(p.arame_kg)}</td>
+    <td class="num">${fmtReais(p.comissao || 0)}</td>
+    <td>${p.situacao}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
+    <td class="col-obs" contenteditable="true" data-pedido="${escHtml(p.pedido)}" oninput="salvarObs(this)">${escHtml(lerObs(p.pedido))}</td>
+  </tr>`).join('');
+  return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz-emitidos">
+      <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>UF</th><th class="num">Peças</th><th class="num">Acess.</th>
+      <th class="num">Arame kg</th><th class="num">Comissão</th><th>Situação</th><th>Data Pedido</th><th>Pedido</th><th>Obs.</th></tr></thead>
+      <tbody>${linhas}</tbody>
+    </table></div>`;
+}
+
 function renderFinanceiro(){
   const showCiaplac = !empresa || empresa === 'CIAPLAC';
   const showBnz = !empresa || empresa === 'BNZ METAIS';
@@ -478,6 +527,7 @@ function renderFinanceiro(){
     $("#v-bnz-comissao-calc").textContent = fmtReais(pecas*0.20) + ' peças + ' + fmtReais(acess*0.01) + ' acessórios + ' + fmtReais(kg*0.20) + ' arame';
     $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR'));
     $("#lista-bnz").innerHTML = renderListaBnz(lista);
+    $("#lista-bnz-emitidos").innerHTML = renderEmitidosForaBnz();
   }
   syncPrintPageStyle();
 }
@@ -559,6 +609,7 @@ async function load(){
     const fin = data.financeiro || {};
     TODOS_CIAPLAC = fin.ciaplac_pedidos || [];
     TODOS_BNZ = fin.bnz_pedidos || [];
+    TODOS_BNZ_PEND = fin.bnz_pendentes || [];
     $("#hoje").textContent = new Date().toLocaleDateString('pt-BR');
     $("#statusbar").textContent = TODOS_CIAPLAC.length + ' pedidos CIAPLAC + ' + TODOS_BNZ.length + ' pedidos BNZ (13 meses)';
     $("#status").textContent = 'atualizado ' + new Date().toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
