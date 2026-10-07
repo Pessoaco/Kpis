@@ -178,8 +178,8 @@
     /* tabela "emitidos e nao entregues": 12 colunas, Obs. pode quebrar linha */
     #tabela-bnz-emitidos th:nth-child(1){width:15%} #tabela-bnz-emitidos th:nth-child(2){width:10%} #tabela-bnz-emitidos th:nth-child(3){width:8%}
     #tabela-bnz-emitidos th:nth-child(4){width:3%} #tabela-bnz-emitidos th:nth-child(5){width:6%} #tabela-bnz-emitidos th:nth-child(6){width:5%}
-    #tabela-bnz-emitidos th:nth-child(7){width:5%} #tabela-bnz-emitidos th:nth-child(8){width:7%} #tabela-bnz-emitidos th:nth-child(9){width:11%}
-    #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:7%} #tabela-bnz-emitidos th:nth-child(12){width:16%}
+    #tabela-bnz-emitidos th:nth-child(7){width:5%} #tabela-bnz-emitidos th:nth-child(8){width:8%} #tabela-bnz-emitidos th:nth-child(9){width:12%}
+    #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:7%} #tabela-bnz-emitidos th:nth-child(12){width:14%}
     #tabela-bnz-emitidos td.col-obs{white-space:normal;background:none}
     #tabela-bnz-emitidos td.col-obs:empty::before{content:""}
     .nota-emitidos b{font-weight:400}
@@ -372,7 +372,7 @@ function agruparPorMes(lista, campo){
 
 function renderEvolucao(pontosRaw, corVar, fmt){
   if(!pontosRaw || pontosRaw.length < 2){
-    return '<div class="empty-msg">Ainda não há meses suficientes com entregas no período.</div>';
+    return '<div class="empty-msg">O gráfico só aparece quando mais de um mês está selecionado (ex.: Últ. 3 meses, ou clique em 2 ou mais meses).</div>';
   }
   const pontos = pontosRaw.map(p => ({ mes: mesLabel(p.mes), valor: p.valor }));
   const max = Math.max(...pontos.map(p=>p.valor), 1);
@@ -478,7 +478,7 @@ function escHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'
 function renderEmitidosForaBnz(){
   const entreguesDepois = TODOS_BNZ
     .filter(p => passaNoPeriodo(p.data_pedido) && !passaNoPeriodo(p.data_entrega))
-    .map(p => Object.assign({}, p, { situacao: 'Entregue em ' + fmtData(p.data_entrega) }));
+    .map(p => Object.assign({}, p, { situacao: 'Entregue ' + fmtData(p.data_entrega).slice(0,5) }));
   const pendentes = TODOS_BNZ_PEND.filter(p => passaNoPeriodo(p.data_pedido));
   const lista = entreguesDepois.concat(pendentes)
     .sort((a,b) => a.data_pedido < b.data_pedido ? -1 : (a.data_pedido > b.data_pedido ? 1 : 0));
