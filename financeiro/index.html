@@ -72,10 +72,24 @@
   .fin-card .k.chart-k{margin-bottom:8px}
   .fin-card.kpi-num{max-width:320px}
   /* BNZ: 4 numeros lado a lado (pecas, acessorios, arame, comissao) */
-  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+  /* pecas e comissao em destaque; acessorios e arame discretos (sem cor, numero menor) */
+  .kpi-row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.5fr;gap:14px;align-items:stretch}
   .kpi-row .fin-card{max-width:none}
   .kpi-row .fin-card .v{font-size:1.9rem}
   .fin-card.comissao{border-width:2px}
+  .fin-card.secundario{background:var(--surface);border:1px solid var(--hair);box-shadow:none;padding:16px 18px}
+  .fin-card.secundario .k{color:var(--ink-faint);font-size:.7rem}
+  .kpi-row .fin-card.secundario .v{font-size:1.25rem;font-weight:500;color:var(--ink-soft)}
+  .fin-card.secundario .note{font-size:.68rem;color:var(--ink-faint)}
+  @media (max-width:760px){ .kpi-row{grid-template-columns:1fr 1fr} }
+
+  /* nomes longos: largura travada + reticencias, pra lista caber sem barra de rolagem */
+  table.tabela-fin td.col-cli,table.tabela-fin td.col-fant,table.tabela-fin td.col-cid{overflow:hidden;text-overflow:ellipsis}
+  table.tabela-fin td.col-cli{max-width:210px}
+  table.tabela-fin td.col-fant{max-width:140px}
+  table.tabela-fin td.col-cid{max-width:110px}
+  .btn-imprimir-lista{margin-left:10px;font:inherit;font-family:"Archivo",sans-serif;font-weight:600;font-size:.7rem;padding:3px 9px;border:1px solid var(--hair);border-radius:6px;background:var(--surface);color:var(--ink-soft);cursor:pointer;vertical-align:middle}
+  .btn-imprimir-lista:hover{color:var(--ink);background:var(--ground)}
 
   .chart-wrap{overflow-x:auto}
   svg.chart{display:block;max-width:640px}
@@ -85,7 +99,7 @@
   .tabela-titulo{font-family:"Archivo",sans-serif;font-weight:600;font-size:.9rem;margin:22px 0 8px}
   .tabela-wrap{overflow-x:auto;border:1px solid var(--hair);border-radius:8px}
   table.tabela-fin{border-collapse:collapse;width:100%;font-size:.72rem}
-  table.tabela-fin th,table.tabela-fin td{text-align:left;padding:5px 8px;border-top:1px solid var(--hair);white-space:nowrap}
+  table.tabela-fin th,table.tabela-fin td{text-align:left;padding:5px 6px;border-top:1px solid var(--hair);white-space:nowrap}
   table.tabela-fin th{font-family:"Archivo",sans-serif;font-size:.64rem;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-faint);background:var(--surface);border-top:0}
   table.tabela-fin th.sortable{cursor:pointer;user-select:none}
   table.tabela-fin th.sortable:hover{color:var(--ink)}
@@ -144,9 +158,21 @@
     #tabela-bnz th:nth-child(4){width:4%} #tabela-bnz th:nth-child(5){width:7%} #tabela-bnz th:nth-child(6){width:6%}
     #tabela-bnz th:nth-child(7){width:6%} #tabela-bnz th:nth-child(8){width:8%} #tabela-bnz th:nth-child(9){width:9%}
     #tabela-bnz th:nth-child(10){width:9%} #tabela-bnz th:nth-child(11){width:14%}
-    .kpi-row{grid-template-columns:repeat(4,1fr);gap:8px}
+    .kpi-row{grid-template-columns:1.5fr 1fr 1fr 1.5fr;gap:8px}
     .kpi-row .fin-card{padding:10px 12px}
     .kpi-row .fin-card .v{font-size:1.5rem}
+    .kpi-row .fin-card.secundario .v{font-size:1rem}
+    .btn-imprimir-lista{display:none!important}
+    /* "Imprimir lista (sem comissao)": so a tabela BNZ, sem cards, grafico, CIAPLAC e coluna Comissao */
+    body.print-lista .masthead,body.print-lista .aviso-data,body.print-lista .controls,
+    body.print-lista #sec-bnz .cards,body.print-lista #sec-ciaplac,body.print-lista .status{display:none!important}
+    body.print-lista #sec-bnz{margin-top:0}
+    body.print-lista #tabela-bnz th:nth-child(8),body.print-lista #tabela-bnz td:nth-child(8){display:none!important}
+    body.print-lista #tabela-bnz th:nth-child(1){width:22%} body.print-lista #tabela-bnz th:nth-child(2){width:15%}
+    body.print-lista #tabela-bnz th:nth-child(3){width:12%} body.print-lista #tabela-bnz th:nth-child(4){width:4%}
+    body.print-lista #tabela-bnz th:nth-child(5){width:7%} body.print-lista #tabela-bnz th:nth-child(6){width:6%}
+    body.print-lista #tabela-bnz th:nth-child(7){width:6%} body.print-lista #tabela-bnz th:nth-child(9){width:9%}
+    body.print-lista #tabela-bnz th:nth-child(10){width:9%} body.print-lista #tabela-bnz th:nth-child(11){width:10%}
   }
 </style>
 <style id="print-page-style"></style>
@@ -169,7 +195,7 @@
   <header class="masthead">
     <h1>Indicadores <span>— Financeiro</span></h1>
     <div style="display:flex;align-items:center;gap:10px">
-      <button id="btn-imprimir" class="btn-imprimir-icone" onclick="window.print()" title="Imprimir / Salvar PDF">🖨️</button>
+      <button id="btn-imprimir" class="btn-imprimir-icone" onclick="document.body.classList.remove('print-lista');window.print()" title="Imprimir / Salvar PDF">🖨️</button>
       <div class="meta" id="hoje">—</div>
     </div>
   </header>
@@ -203,12 +229,12 @@
           <div class="v" id="v-bnz">—</div>
           <div class="note">R$ 0,20 por peça. Sem acessórios, arame, acabamentos, condutores e frete.</div>
         </div>
-        <div class="fin-card bnz">
+        <div class="fin-card secundario">
           <div class="k">Acessórios (pendurais)</div>
           <div class="v" id="v-bnz-acess">—</div>
           <div class="note">R$ 0,01 por unidade · categoria Acessório Drywall.</div>
         </div>
-        <div class="fin-card bnz">
+        <div class="fin-card secundario">
           <div class="k">Arame (kg)</div>
           <div class="v" id="v-bnz-arame">—</div>
           <div class="note">R$ 0,20 por kg · categoria Dry Arame.</div>
@@ -352,11 +378,11 @@ function renderEvolucao(pontosRaw, corVar, fmt){
 }
 
 const COLS_CIAPLAC = [
-  ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','Estado','str'],
+  ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','UF','str'],
   ['valor','Valor','num'], ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
 ];
 const COLS_BNZ = [
-  ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','Estado','str'],
+  ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','UF','str'],
   ['quantidade','Peças','num'], ['acessorios','Acess.','num'], ['arame_kg','Arame kg','num'], ['comissao','Comissão','num'],
   ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
 ];
@@ -380,11 +406,24 @@ function theadSort(cols, sort){
   }).join('') + '</tr>';
 }
 
+// Lista pra secretaria conferir: imprime SO a tabela BNZ, sem cards e sem a coluna Comissao
+// (o vendedor nao compartilha o valor da comissao). Salvar como PDF na janela de impressao.
+function imprimirListaSemComissao(){
+  document.body.classList.add('print-lista');
+  const tirar = () => { document.body.classList.remove('print-lista'); window.removeEventListener('afterprint', tirar); };
+  window.addEventListener('afterprint', tirar);
+  window.print();
+}
+
+// nomes longos: largura travada + reticencias (nome inteiro aparece ao passar o mouse)
+function tdTrunc(txt, cls){ const t = String(txt || '').replace(/"/g,'&quot;'); return `<td class="${cls}" title="${t}">${txt || ''}</td>`; }
+function tdsCliente(p){ return tdTrunc(p.cliente,'col-cli') + tdTrunc(p.fantasia,'col-fant') + tdTrunc(p.cidade,'col-cid') + `<td>${p.uf}</td>`; }
+
 function renderListaCiaplac(pedidos){
   if(!pedidos || !pedidos.length) return '<div class="empty-msg">Nenhum pedido entregue no período.</div>';
   const ordenados = ordenarLista(pedidos, COLS_CIAPLAC, sortCiaplac);
   const linhas = ordenados.map(p => `<tr>
-    <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
+    ${tdsCliente(p)}
     <td class="num">${fmtMoeda(p.valor)}</td>
     <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
   </tr>`).join('');
@@ -398,14 +437,15 @@ function renderListaBnz(pedidos){
   if(!pedidos || !pedidos.length) return '<div class="empty-msg">Nenhum pedido entregue no período.</div>';
   const ordenados = ordenarLista(pedidos, COLS_BNZ, sortBnz);
   const linhas = ordenados.map(p => `<tr>
-    <td>${p.cliente}</td><td>${p.fantasia}</td><td>${p.cidade}</td><td>${p.uf}</td>
+    ${tdsCliente(p)}
     <td class="num">${fmtInt(p.quantidade)}</td>
     <td class="num">${fmtInt(p.acessorios)}</td>
     <td class="num">${fmtInt(p.arame_kg)}</td>
     <td class="num">${fmtReais(p.comissao || 0)}</td>
     <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
   </tr>`).join('');
-  return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)</p>
+  return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)
+      <button type="button" class="btn-imprimir-lista" onclick="imprimirListaSemComissao()" title="Imprime só a lista de pedidos, sem valores de comissão">🖨️ Imprimir lista (sem comissão)</button></p>
     <div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz">
       <thead>${theadSort(COLS_BNZ, sortBnz)}</thead>
       <tbody>${linhas}</tbody>
