@@ -147,6 +147,9 @@
 
   .loading,.empty-msg{padding:30px 0;text-align:center;color:var(--ink-faint);font-size:.85rem}
   .updated{margin-top:20px;text-align:right;font-size:.71rem;color:var(--ink-faint)}
+  /* marca @pessoaco no rodape (padrao de todos os relatorios) */
+  .updated a.autor{color:inherit;font-weight:600;text-decoration:none}
+  .updated a.autor:hover{text-decoration:underline}
 
   @media (max-width:700px){
     .stat-row{grid-template-columns:1fr}
@@ -224,7 +227,7 @@
 
   <p class="updated">Indicadores - Prazo de Entrega · atualizado em <span id="updated-at">—</span></p>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <p class="updated">Prazo de Entrega · versão v1</p>
+  <p class="updated">Prazo de Entrega · versão v2 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></p>
 </div>
 
 <script>
@@ -682,7 +685,7 @@ function syncPrintPageStyle(){
   const perLabel = labelPeriodoAtual() || '';
   const dataTxt = $('#updated-at')?.textContent || '';
   const cabecalho = ('Indicadores - Prazo de Entrega · ' + empLabel + ' — ' + perLabel).replace(/"/g,'\\"');
-  const rodape = (dataTxt && dataTxt!=='—' ? 'atualizado ' + dataTxt : '').replace(/"/g,'\\"');
+  const rodape = ((dataTxt && dataTxt!=='—' ? 'atualizado ' + dataTxt + ' · ' : '') + 'por @pessoaco').replace(/"/g,'\\"');
   const el = $('#print-page-style');
   if(el) el.textContent = '@media print{ @page{ '
     + '@top-left{ content:"'+cabecalho+'"; font-family:Archivo,Arial,sans-serif; font-weight:700; font-size:10.5px; color:#333; }'
