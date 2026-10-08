@@ -97,6 +97,9 @@
   .card-emitidos{display:flex;flex-direction:column;gap:2px}
   .link-abrir{font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;color:var(--series-previsto);text-decoration:none;white-space:nowrap}
   .link-abrir:hover{text-decoration:underline}
+  /* v3: tabela de faturamento por regiao (estreita, total em negrito) */
+  .tabela-regiao{max-width:760px}
+  table.tabela-fin tr.linha-total td{font-weight:700;border-top:2px solid var(--hair)}
   /* v35: card "emitidos no periodo e nao entregues no periodo" */
   #lista-bnz-emitidos{margin-top:26px}
   .nota-emitidos{margin:-4px 0 8px;font-size:.72rem;color:var(--ink-soft)}
@@ -137,6 +140,10 @@
   .login .msg{font-size:.78rem;color:var(--ciaplac-ink);min-height:1.1em}
 
   .versao-pagina{margin-top:10px;font-size:.66rem;color:var(--ink-faint)}
+  /* marca @pessoaco no rodape e no login (padrao de todos os relatorios) */
+  .versao-pagina a.autor{color:inherit;font-weight:600;text-decoration:none}
+  .versao-pagina a.autor:hover{text-decoration:underline}
+  .login .autor-login{margin-top:6px;text-align:center;font-size:.7rem;color:var(--ink-faint)}
   .sair{margin-top:22px;font-size:.72rem;color:var(--ink-faint);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
 
   @media print{
@@ -178,6 +185,9 @@
     .kpi-row .fin-card.secundario .v{font-size:1rem}
     .btn-imprimir-lista{display:none!important}
     .so-tela,.link-abrir{display:none!important}
+    body.print-lista #regiao-bnz,body.print-lista #regiao-ciaplac{display:none!important}
+    #tabela-regiao-bnz th:nth-child(1){width:28%} #tabela-regiao-bnz th:nth-child(n+2){width:12%}
+    #tabela-regiao-ciaplac th:nth-child(1){width:50%} #tabela-regiao-ciaplac th:nth-child(n+2){width:25%}
     /* "Imprimir lista (sem comissao)": so a tabela BNZ, sem cards, grafico, CIAPLAC e coluna Comissao */
     body.print-lista .masthead,body.print-lista .aviso-data,body.print-lista .controls,
     body.print-lista #sec-bnz .cards,body.print-lista #sec-ciaplac,body.print-lista .status{display:none!important}
@@ -211,6 +221,7 @@
     <input id="login-pass" name="password" type="password" placeholder="senha" autocomplete="current-password" required>
     <button type="submit">Entrar</button>
     <span class="msg" id="login-msg"></span>
+    <span class="autor-login">por @pessoaco</span>
   </form>
 </div>
 
@@ -288,6 +299,7 @@
         <div id="chart-bnz"><div class="empty-msg">carregando…</div></div>
       </div>
     </div>
+    <div id="regiao-bnz"></div>
     <div id="lista-bnz"></div>
     <div id="lista-bnz-emitidos"></div>
   </div>
@@ -304,13 +316,14 @@
         <div id="chart-ciaplac"><div class="empty-msg">carregando…</div></div>
       </div>
     </div>
+    <div id="regiao-ciaplac"></div>
     <div id="lista-ciaplac"></div>
   </div>
 
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v2</div>
+  <div class="versao-pagina">Financeiro · versão v4 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -534,6 +547,40 @@ function renderEmitidosForaBnz(){
     </table></div>`;
 }
 
+// v3: faturamento entregue por REGIAO (regiao do cadastro do cliente). Conta pedidos pelo numero do pedido
+// (entrega parcial "S0xxxx (1/2)" + "(2/2)" = 1 pedido). Sem dado de regiao (servidor antigo) a tabela nao aparece.
+function renderPorRegiao(lista, ehBnz){
+  if(!lista.length || !lista.some(p => 'regiao' in p)) return '';
+  const g = {};
+  lista.forEach(p => {
+    const r = p.regiao || 'Sem região';
+    if(!g[r]) g[r] = { pedidos: new Set(), pecas: 0, acess: 0, kg: 0, valor: 0, comissao: 0 };
+    g[r].pedidos.add(String(p.pedido || '').replace(/ \(\d+\/\d+\)$/, ''));
+    g[r].pecas += p.quantidade || 0; g[r].acess += p.acessorios || 0; g[r].kg += p.arame_kg || 0;
+    g[r].valor += p.valor || 0; g[r].comissao += p.comissao || 0;
+  });
+  const regs = Object.keys(g).sort((a,b) => (a === 'Sem região') - (b === 'Sem região') || g[b].valor - g[a].valor);
+  const tot = { pecas: 0, acess: 0, kg: 0, valor: 0, comissao: 0 };
+  let totPedidos = 0;
+  const linha = (nome, x, n, total) => {
+    const cls = total ? ' class="linha-total"' : '';
+    return ehBnz
+      ? `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtInt(x.pecas)}</td><td class="num">${fmtInt(x.acess)}</td><td class="num">${fmtInt(x.kg)}</td><td class="num">${fmtMoeda(x.valor)}</td><td class="num">${fmtReais(x.comissao)}</td></tr>`
+      : `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtMoeda(x.valor)}</td></tr>`;
+  };
+  const corpo = regs.map(r => {
+    const x = g[r]; const n = x.pedidos.size;
+    totPedidos += n; ['pecas','acess','kg','valor','comissao'].forEach(k => tot[k] += x[k]);
+    return linha(r, x, n, false);
+  }).join('') + linha('Total', tot, totPedidos, true);
+  const cab = ehBnz
+    ? '<tr><th>Região</th><th class="num">Pedidos</th><th class="num">Peças</th><th class="num">Acess.</th><th class="num">Arame kg</th><th class="num">Faturamento</th><th class="num">Comissão</th></tr>'
+    : '<tr><th>Região</th><th class="num">Pedidos</th><th class="num">Faturamento</th></tr>';
+  const emp = ehBnz ? 'BNZ' : 'CIAPLAC';
+  return `<p class="tabela-titulo">${emp} · Faturamento entregue por região ${labelPeriodoAtual()}</p>
+    <div class="tabela-wrap tabela-regiao"><table class="tabela-fin" id="tabela-regiao-${emp.toLowerCase()}"><thead>${cab}</thead><tbody>${corpo}</tbody></table></div>`;
+}
+
 function renderFinanceiro(){
   const showCiaplac = !empresa || empresa === 'CIAPLAC';
   const showBnz = !empresa || empresa === 'BNZ METAIS';
@@ -547,6 +594,7 @@ function renderFinanceiro(){
     $("#v-ciaplac").textContent = fmtMoeda(total);
     $("#chart-ciaplac").innerHTML = renderEvolucao(agruparPorMes(lista,'valor'), '--ciaplac-edge', v => fmtMoeda(v));
     $("#lista-ciaplac").innerHTML = renderListaCiaplac(lista);
+    $("#regiao-ciaplac").innerHTML = renderPorRegiao(lista, false);
   }
   if(showBnz){
     const lista = TODOS_BNZ.filter(p => passaNoPeriodo(p.data_entrega));
@@ -560,6 +608,7 @@ function renderFinanceiro(){
     $("#v-bnz-comissao-calc").textContent = fmtReais(pecas*0.20) + ' peças + ' + fmtReais(acess*0.01) + ' acessórios + ' + fmtReais(kg*0.20) + ' arame';
     $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR'));
     $("#lista-bnz").innerHTML = renderListaBnz(lista);
+    $("#regiao-bnz").innerHTML = renderPorRegiao(lista, true);
     $("#lista-bnz-emitidos").innerHTML = renderEmitidosForaBnz();
     $("#v-bnz-emitidos-resumo").textContent = resumoEmitidosForaBnz();
   }
@@ -572,7 +621,7 @@ function syncPrintPageStyle(){
   const empLabel = empresa === 'BNZ METAIS' ? 'BNZ METAIS' : (empresa === 'CIAPLAC' ? 'CIAPLAC' : 'BNZ + CIAPLAC (Total)');
   const perLabel = labelPeriodoAtual() || '';
   const cabecalho = ('Indicadores - Financeiro · ' + empLabel + ' — ' + perLabel).replace(/"/g,'\\"');
-  const rodape = ($('#status')?.textContent || '').replace(/"/g,'\\"');
+  const rodape = (($('#status')?.textContent || '') + ' · por @pessoaco').replace(/"/g,'\\"');
   const el = $('#print-page-style');
   if(el) el.textContent = '@media print{ @page{ '
     + '@top-left{ content:"'+cabecalho+'"; font-family:Archivo,Arial,sans-serif; font-weight:700; font-size:10.5px; color:#333; }'
