@@ -73,7 +73,7 @@
   .fin-card.kpi-num{max-width:320px}
   /* BNZ: 4 numeros lado a lado (pecas, acessorios, arame, comissao) */
   /* pecas e comissao em destaque; acessorios e arame discretos (sem cor, numero menor) */
-  .kpi-row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.5fr;gap:14px;align-items:stretch}
+  .kpi-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.4fr 1fr;gap:12px;align-items:stretch}
   .kpi-row .fin-card{max-width:none}
   .kpi-row .fin-card .v{font-size:1.9rem}
   .fin-card.comissao{border-width:2px}
@@ -94,7 +94,7 @@
   .vendedor-linha{font-size:.8rem;color:var(--ink-soft);margin-top:2px}
   .vendedor-linha b{color:var(--ink)}
   .aviso-info{display:flex;flex-direction:column;gap:3px;margin:-12px 0 20px;font-size:.72rem;color:var(--ink-soft);border-left:3px solid var(--hair);padding:4px 10px}
-  .card-emitidos{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px}
+  .card-emitidos{display:flex;flex-direction:column;gap:2px}
   .link-abrir{font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;color:var(--series-previsto);text-decoration:none;white-space:nowrap}
   .link-abrir:hover{text-decoration:underline}
   /* v35: card "emitidos no periodo e nao entregues no periodo" */
@@ -172,7 +172,7 @@
     #tabela-bnz th:nth-child(4){width:4%} #tabela-bnz th:nth-child(5){width:7%} #tabela-bnz th:nth-child(6){width:6%}
     #tabela-bnz th:nth-child(7){width:6%} #tabela-bnz th:nth-child(8){width:8%} #tabela-bnz th:nth-child(9){width:9%}
     #tabela-bnz th:nth-child(10){width:9%} #tabela-bnz th:nth-child(11){width:14%}
-    .kpi-row{grid-template-columns:1.5fr 1fr 1fr 1.5fr;gap:8px}
+    .kpi-row{grid-template-columns:1.4fr 1fr 1fr 1.4fr 1fr;gap:8px}
     .kpi-row .fin-card{padding:10px 12px}
     .kpi-row .fin-card .v{font-size:1.5rem}
     .kpi-row .fin-card.secundario .v{font-size:1rem}
@@ -275,14 +275,13 @@
           <div class="v" id="v-bnz-comissao">—</div>
           <div class="note" id="v-bnz-comissao-calc">peças + acessórios + arame</div>
         </div>
-      </div>
-      <!-- v36: atalho pros pedidos emitidos no periodo que ainda nao foram entregues no periodo -->
-      <div class="fin-card secundario card-emitidos">
-        <div>
-          <div class="k">Pedidos emitidos no período e não entregues</div>
+        <!-- v2: 5o card, igual ao "Pedidos a entregar" do Copiloto -->
+        <div class="fin-card secundario card-emitidos" onclick="document.getElementById('lista-bnz-emitidos').scrollIntoView({behavior:'smooth'})" style="cursor:pointer">
+          <div class="k">Emitidos e não entregues</div>
+          <div class="v" id="v-bnz-emitidos-qtd">—</div>
           <div class="note" id="v-bnz-emitidos-resumo">—</div>
+          <span class="link-abrir">↗ abrir lista</span>
         </div>
-        <a href="#lista-bnz-emitidos" class="link-abrir" onclick="document.getElementById('lista-bnz-emitidos').scrollIntoView({behavior:'smooth'});return false;">abrir lista ↓</a>
       </div>
       <div class="fin-card bnz">
         <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
@@ -311,7 +310,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v1</div>
+  <div class="versao-pagina">Financeiro · versão v2</div>
 </div>
 
 <script>
@@ -512,10 +511,7 @@ function listaEmitidosForaBnz(){
 // v36: resumo do card-atalho (fica logo depois da Comissao)
 function resumoEmitidosForaBnz(){
   const lista = listaEmitidosForaBnz();
-  if(!lista.length) return 'Nenhum pedido emitido no período ficou para entregar depois.';
-  const pecas = lista.reduce((s,p) => s + (p.quantidade||0), 0);
-  const com = lista.reduce((s,p) => s + (p.comissao||0), 0);
-  return lista.length + (lista.length === 1 ? ' pedido' : ' pedidos') + ' · ' + fmtInt(pecas) + ' peças · comissão prevista ' + fmtReais(com) + ' (entra no mês da entrega)';
+document.getElementById('v-bnz-emitidos-qtd').textContent = lista.length;  if(!lista.length) return 'nenhum pedido';  const pecas = lista.reduce((s,p) => s + (p.quantidade||0), 0);  return fmtInt(pecas) + ' peças · entram no mês da entrega';
 }
 function renderEmitidosForaBnz(){
   const lista = listaEmitidosForaBnz();
