@@ -90,6 +90,13 @@
   table.tabela-fin td.col-cid{max-width:110px}
   .btn-imprimir-lista{margin-left:10px;font:inherit;font-family:"Archivo",sans-serif;font-weight:600;font-size:.7rem;padding:3px 9px;border:1px solid var(--hair);border-radius:6px;background:var(--surface);color:var(--ink-soft);cursor:pointer;vertical-align:middle}
   .btn-imprimir-lista:hover{color:var(--ink);background:var(--ground)}
+  /* v36: subtitulo do vendedor, avisos (ao vivo / imprimir) e card-atalho dos emitidos */
+  .vendedor-linha{font-size:.8rem;color:var(--ink-soft);margin-top:2px}
+  .vendedor-linha b{color:var(--ink)}
+  .aviso-info{display:flex;flex-direction:column;gap:3px;margin:-12px 0 20px;font-size:.72rem;color:var(--ink-soft);border-left:3px solid var(--hair);padding:4px 10px}
+  .card-emitidos{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px}
+  .link-abrir{font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;color:var(--series-previsto);text-decoration:none;white-space:nowrap}
+  .link-abrir:hover{text-decoration:underline}
   /* v35: card "emitidos no periodo e nao entregues no periodo" */
   #lista-bnz-emitidos{margin-top:26px}
   .nota-emitidos{margin:-4px 0 8px;font-size:.72rem;color:var(--ink-soft)}
@@ -129,6 +136,7 @@
   .login button:active{transform:translateY(1px)}
   .login .msg{font-size:.78rem;color:var(--ciaplac-ink);min-height:1.1em}
 
+  .versao-pagina{margin-top:10px;font-size:.66rem;color:var(--ink-faint)}
   .sair{margin-top:22px;font-size:.72rem;color:var(--ink-faint);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
 
   @media print{
@@ -169,6 +177,7 @@
     .kpi-row .fin-card .v{font-size:1.5rem}
     .kpi-row .fin-card.secundario .v{font-size:1rem}
     .btn-imprimir-lista{display:none!important}
+    .so-tela,.link-abrir{display:none!important}
     /* "Imprimir lista (sem comissao)": so a tabela BNZ, sem cards, grafico, CIAPLAC e coluna Comissao */
     body.print-lista .masthead,body.print-lista .aviso-data,body.print-lista .controls,
     body.print-lista #sec-bnz .cards,body.print-lista #sec-ciaplac,body.print-lista .status{display:none!important}
@@ -208,7 +217,10 @@
 <div class="wrap" id="content" hidden>
   <a href="../" class="nav-voltar">← Indicadores</a>
   <header class="masthead">
-    <h1>Indicadores <span>— Financeiro</span></h1>
+    <div>
+      <h1>Indicadores <span>— Financeiro · Previsão do Representante/Vendedor</span></h1>
+      <div class="vendedor-linha" id="vendedor-linha" hidden>Vendedor: <b id="vendedor-nome"></b></div>
+    </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button id="btn-imprimir" class="btn-imprimir-icone" onclick="document.body.classList.remove('print-lista');window.print()" title="Imprimir / Salvar PDF">🖨️</button>
       <div class="meta" id="hoje">—</div>
@@ -216,6 +228,10 @@
   </header>
   <p class="tagline">Fechamento por data efetiva de entrega — o que já foi entregue, pra acompanhar o resultado.</p>
   <div class="aviso-data">⚠ Estes números são pela <b>data de entrega</b>, e não pela data de emissão do pedido (data em que o vendedor fechou o pedido).</div>
+  <div class="aviso-info">
+    <span>🟢 <b>Indicador ao vivo:</b> os números são atualizados na hora em que a página abre, direto do sistema — por isso só funciona com internet.</span>
+    <span class="so-tela">🖨️ <b>Para imprimir:</b> role e imprima a página inteira (Ctrl+P no PC, ou "Compartilhar → Imprimir" no celular).</span>
+  </div>
 
   <div class="controls">
     <div class="seg empresa" id="seg-empresa">
@@ -260,6 +276,14 @@
           <div class="note" id="v-bnz-comissao-calc">peças + acessórios + arame</div>
         </div>
       </div>
+      <!-- v36: atalho pros pedidos emitidos no periodo que ainda nao foram entregues no periodo -->
+      <div class="fin-card secundario card-emitidos">
+        <div>
+          <div class="k">Pedidos emitidos no período e não entregues</div>
+          <div class="note" id="v-bnz-emitidos-resumo">—</div>
+        </div>
+        <a href="#lista-bnz-emitidos" class="link-abrir" onclick="document.getElementById('lista-bnz-emitidos').scrollIntoView({behavior:'smooth'});return false;">abrir lista ↓</a>
+      </div>
       <div class="fin-card bnz">
         <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
         <div id="chart-bnz"><div class="empty-msg">carregando…</div></div>
@@ -286,6 +310,8 @@
 
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
+  <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
+  <div class="versao-pagina">Financeiro · versão v1</div>
 </div>
 
 <script>
@@ -475,13 +501,24 @@ function renderListaBnz(pedidos){
 function lerObs(pedido){ try { return localStorage.getItem('fin_obs_' + pedido) || ''; } catch(e){ return ''; } }
 function salvarObs(el){ try { localStorage.setItem('fin_obs_' + el.dataset.pedido, el.textContent.trim()); } catch(e){} }
 function escHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function renderEmitidosForaBnz(){
+function listaEmitidosForaBnz(){
   const entreguesDepois = TODOS_BNZ
     .filter(p => passaNoPeriodo(p.data_pedido) && !passaNoPeriodo(p.data_entrega))
     .map(p => Object.assign({}, p, { situacao: 'Entregue ' + fmtData(p.data_entrega).slice(0,5) }));
   const pendentes = TODOS_BNZ_PEND.filter(p => passaNoPeriodo(p.data_pedido));
-  const lista = entreguesDepois.concat(pendentes)
+  return entreguesDepois.concat(pendentes)
     .sort((a,b) => a.data_pedido < b.data_pedido ? -1 : (a.data_pedido > b.data_pedido ? 1 : 0));
+}
+// v36: resumo do card-atalho (fica logo depois da Comissao)
+function resumoEmitidosForaBnz(){
+  const lista = listaEmitidosForaBnz();
+  if(!lista.length) return 'Nenhum pedido emitido no período ficou para entregar depois.';
+  const pecas = lista.reduce((s,p) => s + (p.quantidade||0), 0);
+  const com = lista.reduce((s,p) => s + (p.comissao||0), 0);
+  return lista.length + (lista.length === 1 ? ' pedido' : ' pedidos') + ' · ' + fmtInt(pecas) + ' peças · comissão prevista ' + fmtReais(com) + ' (entra no mês da entrega)';
+}
+function renderEmitidosForaBnz(){
+  const lista = listaEmitidosForaBnz();
   const titulo = `<p class="tabela-titulo">BNZ · Emitidos ${labelPeriodoAtual()} e não entregues no período (${lista.length} pedidos)</p>
     <p class="nota-emitidos">A comissão destes pedidos entra no fechamento do mês em que forem entregues. Clique em <b>Obs.</b> para anotar.</p>`;
   if(!lista.length) return titulo + '<div class="empty-msg">Nenhum pedido emitido no período ficou para entregar depois.</div>';
@@ -528,6 +565,7 @@ function renderFinanceiro(){
     $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR'));
     $("#lista-bnz").innerHTML = renderListaBnz(lista);
     $("#lista-bnz-emitidos").innerHTML = renderEmitidosForaBnz();
+    $("#v-bnz-emitidos-resumo").textContent = resumoEmitidosForaBnz();
   }
   syncPrintPageStyle();
 }
@@ -607,6 +645,8 @@ async function load(){
     const data = await r.json();
     if(data && data.erro){ logout(); showLogin("Usuário ou senha errado."); return; }
     const fin = data.financeiro || {};
+    // v36: nome do vendedor vem do login (servidor); sem nome, a linha fica escondida
+    if(data.vendedor){ $("#vendedor-nome").textContent = data.vendedor; $("#vendedor-linha").hidden = false; }
     TODOS_CIAPLAC = fin.ciaplac_pedidos || [];
     TODOS_BNZ = fin.bnz_pedidos || [];
     TODOS_BNZ_PEND = fin.bnz_pendentes || [];
