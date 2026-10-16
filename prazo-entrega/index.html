@@ -227,7 +227,7 @@
 
   <p class="updated">Indicadores - Prazo de Entrega · atualizado em <span id="updated-at">—</span></p>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <p class="updated">Prazo de Entrega · versão v2 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></p>
+  <p class="updated">Prazo de Entrega · versão v3 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></p>
 </div>
 
 <script>
@@ -610,7 +610,7 @@ function renderTabela(pedidosOriginais){
       <td>${p.cidade||'—'}</td>
       <td>${p.estado||'—'}</td>
       <td>${p.regiao||'—'}</td>
-      <td>${p.efetivo ? fmtDateBR(p.efetivo) : '<span class="pendente">—</span>'}</td>
+      <td>${p.efetivo ? fmtDateBR(p.efetivo) + (p.parcial ? ' <span class="pendente">parcial</span>' : '') : '<span class="pendente">—</span>'}</td>
       <td class="num">${atrasoTxt}</td>
       <td>${fmtDateBR(p.previsto)}</td>
       <td>${fmtDateBR(p.data_pedido)}</td>
@@ -633,7 +633,8 @@ function renderTabela(pedidosOriginais){
 // Pendentes; os outros indicadores (Fora do Prazo, No Prazo, Atraso Médio, Evolução, Região) continuam
 // usando a base inteira, sem esse corte — só o pendente é dado não-confiável antes dessa data.
 const DATA_INICIO_CONTROLE_ENTREGA = '2026-08-01';
-const ehPendenteConfiavel = p => !p.efetivo && p.data_pedido >= DATA_INICIO_CONTROLE_ENTREGA;
+// v3: pedido PARCIAL (chegou so parte) continua pendente ate completar; o prazo segue contado pela 1a chegada.
+const ehPendenteConfiavel = p => (!p.efetivo || p.parcial) && p.data_pedido >= DATA_INICIO_CONTROLE_ENTREGA;
 
 // Pedidos Pendentes NÃO segue o seletor de Período (ela foi explícita: "independente do prazo que eu
 // clicar" tem que mostrar TUDO que falta entregar) — só respeita a Empresa selecionada, igual a Evolução.
