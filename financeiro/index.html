@@ -324,7 +324,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v5 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v6 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -480,7 +480,7 @@ function renderListaCiaplac(pedidos){
   const ordenados = ordenarLista(pedidos, COLS_CIAPLAC, sortCiaplac);
   const linhas = ordenados.map(p => `<tr>
     ${tdsCliente(p)}
-    <td class="num">${fmtMoeda(p.valor)}</td>
+    <td class="num">${fmtReais(p.valor)}</td>
     <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
   </tr>`).join('');
   return `<p class="tabela-titulo">CIAPLAC · Lista completa (${pedidos.length} pedidos)</p>
@@ -566,8 +566,8 @@ function renderPorRegiao(lista, ehBnz){
   const linha = (nome, x, n, total) => {
     const cls = total ? ' class="linha-total"' : '';
     return ehBnz
-      ? `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtInt(x.pecas)}</td><td class="num">${fmtInt(x.acess)}</td><td class="num">${fmtInt(x.kg)}</td><td class="num">${fmtMoeda(x.valor)}</td><td class="num">${fmtReais(x.comissao)}</td></tr>`
-      : `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtMoeda(x.valor)}</td></tr>`;
+      ? `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtInt(x.pecas)}</td><td class="num">${fmtInt(x.acess)}</td><td class="num">${fmtInt(x.kg)}</td><td class="num">${fmtReais(x.valor)}</td><td class="num">${fmtReais(x.comissao)}</td></tr>`
+      : `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtReais(x.valor)}</td></tr>`;
   };
   const corpo = regs.map(r => {
     const x = g[r]; const n = x.pedidos.size;
@@ -592,7 +592,7 @@ function renderFinanceiro(){
     const lista = TODOS_CIAPLAC.filter(p => passaNoPeriodo(p.data_entrega));
     const total = lista.reduce((s,p) => s + (p.valor||0), 0);
     $("#label-ciaplac-total").textContent = 'CIAPLAC · Faturamento entregue ' + labelPeriodoAtual();
-    $("#v-ciaplac").textContent = fmtMoeda(total);
+    $("#v-ciaplac").textContent = fmtReais(total);
     $("#chart-ciaplac").innerHTML = renderEvolucao(agruparPorMes(lista,'valor'), '--ciaplac-edge', v => fmtMoeda(v));
     $("#lista-ciaplac").innerHTML = renderListaCiaplac(lista);
     $("#regiao-ciaplac").innerHTML = renderPorRegiao(lista, false);
