@@ -101,7 +101,8 @@
   .tabela-regiao{max-width:760px}
   table.tabela-fin tr.linha-total td{font-weight:700;border-top:2px solid var(--hair)}
   /* v35: card "emitidos no periodo e nao entregues no periodo" */
-  #lista-bnz-emitidos{margin-top:26px}
+  #lista-bnz-emitidos,#lista-ciaplac-emitidos{margin-top:26px}
+  .fin-card.secundario.card-emitidos .v{font-size:1.25rem;font-weight:500;color:var(--ink-soft)}
   .nota-emitidos{margin:-4px 0 8px;font-size:.72rem;color:var(--ink-soft)}
   table.tabela-fin td.col-obs{min-width:180px;white-space:normal;background:var(--ground);outline:none;color:var(--ink)}
   table.tabela-fin td.col-obs:focus{background:var(--surface);box-shadow:inset 0 0 0 2px var(--series-previsto)}
@@ -199,7 +200,10 @@
     #tabela-bnz-emitidos th:nth-child(4){width:3%} #tabela-bnz-emitidos th:nth-child(5){width:6%} #tabela-bnz-emitidos th:nth-child(6){width:5%}
     #tabela-bnz-emitidos th:nth-child(7){width:5%} #tabela-bnz-emitidos th:nth-child(8){width:8%} #tabela-bnz-emitidos th:nth-child(9){width:12%}
     #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:7%} #tabela-bnz-emitidos th:nth-child(12){width:14%}
-    #tabela-bnz-emitidos td.col-obs{white-space:normal;background:none}
+    #tabela-bnz-emitidos td.col-obs,#tabela-ciaplac-emitidos td.col-obs{white-space:normal;background:none}
+    #tabela-ciaplac-emitidos th:nth-child(1){width:20%} #tabela-ciaplac-emitidos th:nth-child(2){width:13%} #tabela-ciaplac-emitidos th:nth-child(3){width:11%}
+    #tabela-ciaplac-emitidos th:nth-child(4){width:4%} #tabela-ciaplac-emitidos th:nth-child(5){width:11%} #tabela-ciaplac-emitidos th:nth-child(6){width:13%}
+    #tabela-ciaplac-emitidos th:nth-child(7){width:8%} #tabela-ciaplac-emitidos th:nth-child(8){width:8%} #tabela-ciaplac-emitidos th:nth-child(9){width:12%}
     #tabela-bnz-emitidos td.col-obs:empty::before{content:""}
     .nota-emitidos b{font-weight:400}
     body.print-lista #tabela-bnz th:nth-child(1){width:22%} body.print-lista #tabela-bnz th:nth-child(2){width:15%}
@@ -288,7 +292,7 @@
         </div>
         <!-- v2: 5o card, igual ao "Pedidos a entregar" do Copiloto -->
         <div class="fin-card secundario card-emitidos" onclick="document.getElementById('lista-bnz-emitidos').scrollIntoView({behavior:'smooth'})" style="cursor:pointer">
-          <div class="k">Emitidos e não entregues</div>
+          <div class="k">Não entregues no mês</div>
           <div class="v" id="v-bnz-emitidos-qtd">—</div>
           <div class="note" id="v-bnz-emitidos-resumo">—</div>
           <span class="link-abrir">↗ abrir lista</span>
@@ -312,6 +316,13 @@
         <div class="v" id="v-ciaplac">—</div>
         <div class="note">Soma dos pedidos com entrega efetiva registrada no período selecionado. Não inclui frete.</div>
       </div>
+      <!-- v8: card-atalho dos nao entregues no mes (CIAPLAC) -->
+      <div class="fin-card secundario card-emitidos" style="max-width:320px;cursor:pointer" onclick="document.getElementById('lista-ciaplac-emitidos').scrollIntoView({behavior:'smooth'})">
+        <div class="k">Não entregues no mês</div>
+        <div class="v" id="v-ciaplac-emitidos-qtd">—</div>
+        <div class="note" id="v-ciaplac-emitidos-resumo">—</div>
+        <span class="link-abrir">↗ abrir lista</span>
+      </div>
       <div class="fin-card ciaplac">
         <div class="k chart-k">CIAPLAC · Evolução do faturamento entregue (mês a mês)</div>
         <div id="chart-ciaplac"><div class="empty-msg">carregando…</div></div>
@@ -319,12 +330,13 @@
     </div>
     <div id="regiao-ciaplac"></div>
     <div id="lista-ciaplac"></div>
+    <div id="lista-ciaplac-emitidos"></div>
   </div>
 
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v6 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v8 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -374,6 +386,7 @@ function mesLabel(ym){ return MESES_LABEL[Number(ym.split('-')[1])-1]; }
 let TODOS_CIAPLAC = [];
 let TODOS_BNZ = [];
 let TODOS_BNZ_PEND = []; // v35: pedidos com saldo a entregar (pedido - entregue)
+let TODOS_CIAPLAC_PEND = []; // v8
 let empresa = 'BNZ METAIS'; // abre na primeira representada (ordem alfabetica); Total fica por ultimo
 let periodo = 'mes';
 let mesesSelecionados = new Set();
@@ -514,24 +527,55 @@ function renderListaBnz(pedidos){
 function lerObs(pedido){ try { return localStorage.getItem('fin_obs_' + pedido) || ''; } catch(e){ return ''; } }
 function salvarObs(el){ try { localStorage.setItem('fin_obs_' + el.dataset.pedido, el.textContent.trim()); } catch(e){} }
 function escHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function listaEmitidosForaBnz(){
-  const entreguesDepois = TODOS_BNZ
-    .filter(p => passaNoPeriodo(p.data_pedido) && !passaNoPeriodo(p.data_entrega))
-    .map(p => Object.assign({}, p, { situacao: 'Entregue ' + fmtData(p.data_entrega).slice(0,5) }));
-  const pendentes = TODOS_BNZ_PEND.filter(p => passaNoPeriodo(p.data_pedido));
+// v8: NAO ENTREGUES DENTRO DO MES = todo pedido emitido ATE o fim do periodo que nao foi entregue (inteiro ou em parte)
+// dentro dele - inclusive pedido de mes anterior ainda pendente (ex.: Forrorama emitido em agosto, 3a carga pendente).
+// Entra: (a) entrega que aconteceu DEPOIS do fim do periodo ("Ja entregue em dd/mm") e (b) saldo ainda pendente hoje.
+function fimDoPeriodoIso(){
+  const hoje = new Date();
+  if(mesesSelecionados.size){
+    const m = Math.max(...Array.from(mesesSelecionados));
+    const fim = new Date(hoje.getFullYear(), m + 1, 0);
+    return fim.getFullYear() + '-' + String(fim.getMonth()+1).padStart(2,'0') + '-' + String(fim.getDate()).padStart(2,'0');
+  }
+  return hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+}
+function listaNaoEntregues(todos, pend){
+  const fim = fimDoPeriodoIso();
+  const entreguesDepois = todos
+    .filter(p => p.data_pedido && p.data_pedido <= fim && p.data_entrega && p.data_entrega > fim)
+    .map(p => Object.assign({}, p, { situacao: 'Já entregue em ' + fmtData(p.data_entrega).slice(0,5) }));
+  const pendentes = pend
+    .filter(p => p.data_pedido && p.data_pedido <= fim)
+    .map(p => Object.assign({}, p, { situacao: 'Pendente de entrega' }));
   return entreguesDepois.concat(pendentes)
     .sort((a,b) => a.data_pedido < b.data_pedido ? -1 : (a.data_pedido > b.data_pedido ? 1 : 0));
 }
-// v36: resumo do card-atalho (fica logo depois da Comissao)
+function listaEmitidosForaBnz(){ return listaNaoEntregues(TODOS_BNZ, TODOS_BNZ_PEND); }
+function listaEmitidosForaCiaplac(){ return listaNaoEntregues(TODOS_CIAPLAC, TODOS_CIAPLAC_PEND); }
+// resumo dos cards-atalho
 function resumoEmitidosForaBnz(){
   const lista = listaEmitidosForaBnz();
-document.getElementById('v-bnz-emitidos-qtd').textContent = lista.length;  if(!lista.length) return 'nenhum pedido';  const pecas = lista.reduce((s,p) => s + (p.quantidade||0), 0);  return fmtInt(pecas) + ' peças · entram no mês da entrega';
+  document.getElementById('v-bnz-emitidos-qtd').textContent = lista.length;
+  if(!lista.length) return 'nenhum pedido';
+  const pecas = lista.reduce((s,p) => s + (p.quantidade||0), 0);
+  return fmtInt(pecas) + ' peças · entram no mês da entrega';
 }
+function resumoEmitidosForaCiaplac(){
+  const lista = listaEmitidosForaCiaplac();
+  document.getElementById('v-ciaplac-emitidos-qtd').textContent = lista.length;
+  if(!lista.length) return 'nenhum pedido';
+  const valor = lista.reduce((s,p) => s + (p.valor||0), 0);
+  return fmtReais(valor) + ' · entram no mês da entrega';
+}
+function tituloNaoEntregues(emp, n){
+  return `<p class="tabela-titulo">${emp} · Pedidos não entregues dentro do mês ${labelPeriodoAtual()} (${n} pedidos)</p>
+    <p class="nota-emitidos">Pedidos emitidos até o fim do período que não foram entregues (inteiros ou em parte) dentro dele — inclusive de meses anteriores. Entram no fechamento do mês em que forem entregues. A coluna <b>Situação</b> mostra como estava no dia em que o relatório foi tirado: “Já entregue em …” (entregue depois do fim do mês) ou “Pendente de entrega” (só o que falta entregar). Clique em <b>Obs.</b> para anotar.</p>`;
+}
+function tdObs(p){ return `<td class="col-obs" contenteditable="true" data-pedido="${escHtml(p.pedido)}" oninput="salvarObs(this)">${escHtml(lerObs(p.pedido))}</td>`; }
 function renderEmitidosForaBnz(){
   const lista = listaEmitidosForaBnz();
-  const titulo = `<p class="tabela-titulo">BNZ · Emitidos ${labelPeriodoAtual()} e não entregues no período (${lista.length} pedidos)</p>
-    <p class="nota-emitidos">A comissão destes pedidos entra no fechamento do mês em que forem entregues. Clique em <b>Obs.</b> para anotar.</p>`;
-  if(!lista.length) return titulo + '<div class="empty-msg">Nenhum pedido emitido no período ficou para entregar depois.</div>';
+  const titulo = tituloNaoEntregues('BNZ', lista.length);
+  if(!lista.length) return titulo + '<div class="empty-msg">Todos os pedidos foram entregues dentro do mês.</div>';
   const linhas = lista.map(p => `<tr>
     ${tdsCliente(p)}
     <td class="num">${fmtInt(p.quantidade)}</td>
@@ -539,11 +583,26 @@ function renderEmitidosForaBnz(){
     <td class="num">${fmtInt(p.arame_kg)}</td>
     <td class="num">${fmtReais(p.comissao || 0)}</td>
     <td>${p.situacao}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
-    <td class="col-obs" contenteditable="true" data-pedido="${escHtml(p.pedido)}" oninput="salvarObs(this)">${escHtml(lerObs(p.pedido))}</td>
+    ${tdObs(p)}
   </tr>`).join('');
   return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz-emitidos">
       <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>UF</th><th class="num">Peças</th><th class="num">Acess.</th>
       <th class="num">Arame kg</th><th class="num">Comissão</th><th>Situação</th><th>Data Pedido</th><th>Pedido</th><th>Obs.</th></tr></thead>
+      <tbody>${linhas}</tbody>
+    </table></div>`;
+}
+function renderEmitidosForaCiaplac(){
+  const lista = listaEmitidosForaCiaplac();
+  const titulo = tituloNaoEntregues('CIAPLAC', lista.length);
+  if(!lista.length) return titulo + '<div class="empty-msg">Todos os pedidos foram entregues dentro do mês.</div>';
+  const linhas = lista.map(p => `<tr>
+    ${tdsCliente(p)}
+    <td class="num">${fmtReais(p.valor || 0)}</td>
+    <td>${p.situacao}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
+    ${tdObs(p)}
+  </tr>`).join('');
+  return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac-emitidos">
+      <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>UF</th><th class="num">Valor</th><th>Situação</th><th>Data Pedido</th><th>Pedido</th><th>Obs.</th></tr></thead>
       <tbody>${linhas}</tbody>
     </table></div>`;
 }
@@ -595,6 +654,8 @@ function renderFinanceiro(){
     $("#v-ciaplac").textContent = fmtReais(total);
     $("#chart-ciaplac").innerHTML = renderEvolucao(agruparPorMes(lista,'valor'), '--ciaplac-edge', v => fmtMoeda(v));
     $("#lista-ciaplac").innerHTML = renderListaCiaplac(lista);
+    $("#lista-ciaplac-emitidos").innerHTML = renderEmitidosForaCiaplac();
+    $("#v-ciaplac-emitidos-resumo").textContent = resumoEmitidosForaCiaplac();
     $("#regiao-ciaplac").innerHTML = renderPorRegiao(lista, false);
   }
   if(showBnz){
@@ -696,6 +757,7 @@ async function load(){
     TODOS_CIAPLAC = fin.ciaplac_pedidos || [];
     TODOS_BNZ = fin.bnz_pedidos || [];
     TODOS_BNZ_PEND = fin.bnz_pendentes || [];
+    TODOS_CIAPLAC_PEND = fin.ciaplac_pendentes || [];
     $("#hoje").textContent = new Date().toLocaleDateString('pt-BR');
     $("#statusbar").textContent = TODOS_CIAPLAC.length + ' pedidos CIAPLAC + ' + TODOS_BNZ.length + ' pedidos BNZ (13 meses)';
     $("#status").textContent = 'atualizado ' + new Date().toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
