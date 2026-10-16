@@ -336,7 +336,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v8 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v9 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -572,8 +572,14 @@ function tituloNaoEntregues(emp, n){
     <p class="nota-emitidos">Pedidos emitidos até o fim do período que não foram entregues (inteiros ou em parte) dentro dele — inclusive de meses anteriores. Entram no fechamento do mês em que forem entregues. A coluna <b>Situação</b> mostra como estava no dia em que o relatório foi tirado: “Já entregue em …” (entregue depois do fim do mês) ou “Pendente de entrega” (só o que falta entregar). Clique em <b>Obs.</b> para anotar.</p>`;
 }
 function tdObs(p){ return `<td class="col-obs" contenteditable="true" data-pedido="${escHtml(p.pedido)}" oninput="salvarObs(this)">${escHtml(lerObs(p.pedido))}</td>`; }
+// v9: colunas ordenaveis (clicar no titulo da coluna) nas listas de nao entregues no mes
+const COLS_BNZ_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['quantidade','Peças','num'],['acessorios','Acess.','num'],['arame_kg','Arame kg','num'],['comissao','Comissão','num'],['situacao','Situação','str'],['data_pedido','Data Pedido','str'],['pedido','Pedido','str'],['obs','Obs.','str']];
+const COLS_CIA_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['valor','Valor','num'],['situacao','Situação','str'],['data_pedido','Data Pedido','str'],['pedido','Pedido','str'],['obs','Obs.','str']];
+let sortBnzNE = { col:'data_pedido', dir:1 };
+let sortCiaNE = { col:'data_pedido', dir:1 };
+function comObs(lista){ return lista.map(p => Object.assign({}, p, { obs: lerObs(p.pedido) })); }
 function renderEmitidosForaBnz(){
-  const lista = listaEmitidosForaBnz();
+  const lista = ordenarLista(comObs(listaEmitidosForaBnz()), COLS_BNZ_NE, sortBnzNE);
   const titulo = tituloNaoEntregues('BNZ', lista.length);
   if(!lista.length) return titulo + '<div class="empty-msg">Todos os pedidos foram entregues dentro do mês.</div>';
   const linhas = lista.map(p => `<tr>
@@ -586,13 +592,12 @@ function renderEmitidosForaBnz(){
     ${tdObs(p)}
   </tr>`).join('');
   return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz-emitidos">
-      <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>UF</th><th class="num">Peças</th><th class="num">Acess.</th>
-      <th class="num">Arame kg</th><th class="num">Comissão</th><th>Situação</th><th>Data Pedido</th><th>Pedido</th><th>Obs.</th></tr></thead>
+      <thead>${theadSort(COLS_BNZ_NE, sortBnzNE)}</thead>
       <tbody>${linhas}</tbody>
     </table></div>`;
 }
 function renderEmitidosForaCiaplac(){
-  const lista = listaEmitidosForaCiaplac();
+  const lista = ordenarLista(comObs(listaEmitidosForaCiaplac()), COLS_CIA_NE, sortCiaNE);
   const titulo = tituloNaoEntregues('CIAPLAC', lista.length);
   if(!lista.length) return titulo + '<div class="empty-msg">Todos os pedidos foram entregues dentro do mês.</div>';
   const linhas = lista.map(p => `<tr>
@@ -602,7 +607,7 @@ function renderEmitidosForaCiaplac(){
     ${tdObs(p)}
   </tr>`).join('');
   return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac-emitidos">
-      <thead><tr><th>Cliente</th><th>Nome Fantasia</th><th>Cidade</th><th>UF</th><th class="num">Valor</th><th>Situação</th><th>Data Pedido</th><th>Pedido</th><th>Obs.</th></tr></thead>
+      <thead>${theadSort(COLS_CIA_NE, sortCiaNE)}</thead>
       <tbody>${linhas}</tbody>
     </table></div>`;
 }
@@ -732,6 +737,20 @@ $('#lista-bnz').addEventListener('click', e => {
   const th = e.target.closest('th[data-col]'); if(!th) return;
   const col = th.dataset.col;
   if(sortBnz.col===col) sortBnz.dir *= -1; else sortBnz = { col, dir:1 };
+  renderFinanceiro();
+});
+
+// v9: ordenacao das listas de nao entregues no mes (clicar de novo inverte)
+$('#lista-bnz-emitidos').addEventListener('click', e => {
+  const th = e.target.closest('th[data-col]'); if(!th) return;
+  const col = th.dataset.col;
+  if(sortBnzNE.col===col) sortBnzNE.dir *= -1; else sortBnzNE = { col, dir:1 };
+  renderFinanceiro();
+});
+$('#lista-ciaplac-emitidos').addEventListener('click', e => {
+  const th = e.target.closest('th[data-col]'); if(!th) return;
+  const col = th.dataset.col;
+  if(sortCiaNE.col===col) sortCiaNE.dir *= -1; else sortCiaNE = { col, dir:1 };
   renderFinanceiro();
 });
 
