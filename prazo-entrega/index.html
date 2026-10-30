@@ -195,10 +195,12 @@
     <h1>Indicadores <span>— Prazo de Entrega</span></h1>
     <div style="display:flex;align-items:center;gap:10px">
       <button id="btn-imprimir" class="btn-imprimir-icone" onclick="window.print()" title="Imprimir / Salvar PDF">🖨️</button>
+      <!-- v4: link que abre sem login com a foto desta tela (30 dias) -->
+      <button id="btn-compartilhar" class="btn-imprimir-icone" onclick="IALinkCompartilhar({ painel:'prazo' })" title="Compartilhar link (abre sem login, vale 30 dias)">🔗</button>
       <div class="meta" id="hoje">—</div>
     </div>
   </header>
-  <p class="tagline">Indicadores ao vivo — página cresce conforme novos indicadores forem adicionados.</p>
+  <p class="tagline" data-nao-compartilhar>Indicadores ao vivo — página cresce conforme novos indicadores forem adicionados.</p>
 
   <section class="card" id="card-entrega">
     <div class="controls">
@@ -227,7 +229,7 @@
 
   <p class="updated">Indicadores - Prazo de Entrega · atualizado em <span id="updated-at">—</span></p>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <p class="updated">Prazo de Entrega · versão v3 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></p>
+  <p class="updated">Prazo de Entrega · versão v4 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></p>
 </div>
 
 <script>
@@ -820,5 +822,7 @@ $('#seg-meses').addEventListener('click', e => {
 
 load();
 </script>
+<!-- botao "Compartilhar link" (IALINK, igual em todos os paineis) -->
+<script src="https://pessoaco.github.io/Kpis/link/compartilhar.js?v=1"></script>
 </body>
 </html>
