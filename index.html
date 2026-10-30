@@ -34,31 +34,40 @@
   .item .nome{font-family:"Archivo",sans-serif;font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:8px}
   .item .nome .seta{color:var(--series-previsto);font-weight:400}
   .item .desc{font-size:.8rem;color:var(--ink-soft);margin-top:3px}
+  .rodape-hub{margin-top:28px;font-size:.7rem;color:var(--ink-faint)}
+  .rodape-hub a{color:inherit;font-weight:600;text-decoration:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Indicadores</h1>
   <p class="sub">Escolha o indicador que você quer abrir.</p>
+  <!-- v2: ordem combinada com a Leidi (30/10/2026): Vendas, Prospects, Financeiro, Rota, Prazo -->
   <div class="lista">
-    <a class="item" href="prazo-entrega/">
-      <div class="nome">Prazo de Entrega <span class="seta">→</span></div>
-      <div class="desc">Prazo prometido x real, por representada — indicador pra apresentação/PDF.</div>
+    <!-- ferramentas de venda ficam no site do Copiloto: o login é o mesmo e já vem salvo -->
+    <a class="item" href="https://pessoaco.github.io/painel-vendedor/">
+      <div class="nome">Copiloto de Vendas <span class="seta">→</span></div>
+      <div class="desc">Missões, atividades e carteira de clientes do dia.</div>
+    </a>
+    <a class="item" href="https://pessoaco.github.io/painel-vendedor/prospects/">
+      <div class="nome">Copiloto de Prospects <span class="seta">→</span></div>
+      <div class="desc">Prospecção: lojas novas, atividades e placar do mês.</div>
     </a>
     <a class="item" href="financeiro/">
       <div class="nome">Financeiro <span class="seta">→</span></div>
       <div class="desc">Fechamento do mês do representante — acesso restrito, login necessário.</div>
     </a>
-    <!-- ferramentas de venda (ficam no site do Copiloto: o login é o mesmo e já vem salvo) -->
-    <a class="item" href="https://pessoaco.github.io/painel-vendedor/">
-      <div class="nome">Copiloto de Vendas <span class="seta">→</span></div>
-      <div class="desc">Missões, atividades e carteira de clientes do dia.</div>
-    </a>
     <a class="item" href="https://pessoaco.github.io/painel-vendedor/rota/">
       <div class="nome">Rota de Visitas <span class="seta">→</span></div>
       <div class="desc">Clientes e prospects no mapa por região — monta a rota no Google Maps ou Waze.</div>
     </a>
+    <a class="item" href="prazo-entrega/">
+      <div class="nome">Prazo de Entrega <span class="seta">→</span></div>
+      <div class="desc">Prazo prometido x real, por representada — indicador pra apresentação/PDF.</div>
+    </a>
   </div>
+  <!-- VERSAO DA PAGINA: subir o numero a cada alteracao -->
+  <p class="rodape-hub">Indicadores · versão v2 · por <a href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></p>
 </div>
 </body>
 </html>
