@@ -77,6 +77,9 @@
   .kpi-row .fin-card{max-width:none}
   .kpi-row .fin-card .v{font-size:1.9rem}
   .fin-card.comissao{border-width:2px}
+  /* v13: MODO CONFERENCIA (login so com "conferencia"): sem card Comissao e sem notas de preco */
+  body.modo-conferencia .fin-card.comissao,body.modo-conferencia .nota-preco{display:none!important}
+  .selo-conferencia{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;background:#eef4ff;color:#2b4a8b;font-size:.72rem;font-weight:700}
   .fin-card.secundario{background:var(--surface);border:1px solid var(--hair);box-shadow:none;padding:16px 18px}
   .fin-card.secundario .k{color:var(--ink-faint);font-size:.7rem}
   .kpi-row .fin-card.secundario .v{font-size:1.25rem;font-weight:500;color:var(--ink-soft)}
@@ -237,11 +240,14 @@
   <a href="../" class="nav-voltar">← Indicadores</a>
   <header class="masthead">
     <div>
-      <h1>Indicadores <span>— Financeiro · Previsão do Representante/Vendedor</span></h1>
+      <h1>Indicadores <span id="titulo-sub">— Financeiro · Previsão do Representante/Vendedor</span></h1>
+      <div class="selo-conferencia" id="selo-conferencia" hidden>Conferência de entregas — sem valores de comissão</div>
       <div class="vendedor-linha" id="vendedor-linha" hidden>Vendedor: <b id="vendedor-nome"></b></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button id="btn-imprimir" class="btn-imprimir-icone" onclick="document.body.classList.remove('print-lista');window.print()" title="Imprimir / Salvar PDF">🖨️</button>
+      <!-- v14: link que abre sem login com a foto desta tela (30 dias). Quem tem o Financeiro completo escolhe com/sem comissao -->
+      <button id="btn-compartilhar" class="btn-imprimir-icone" onclick="IALinkCompartilhar({ painel:'financeiro', titulo: () => (CONFERENCIA ? 'Conferência de Entregas' : 'Financeiro') + ' · ' + (empresa || 'BNZ + CIAPLAC') + ' · ' + labelPeriodoAtual().replace(/^(no|nos|em|de)\s+/i, ''), perguntarComissao: () => !CONFERENCIA })" title="Compartilhar link (abre sem login, vale 30 dias)">🔗</button>
       <div class="meta" id="hoje">—</div>
     </div>
   </header>
@@ -250,7 +256,7 @@
   <!-- v10: aviso quando os dados vem da copia (sistema fora do ar / sem internet) -->
   <div class="aviso-desatualizado" id="aviso-desatualizado" hidden></div>
   <div class="aviso-info">
-    <span>🟢 <b>Indicador ao vivo:</b> os números são atualizados na hora em que a página abre, direto do sistema — por isso só funciona com internet.</span>
+    <span data-nao-compartilhar>🟢 <b>Indicador ao vivo:</b> os números são atualizados na hora em que a página abre, direto do sistema — por isso só funciona com internet.</span>
     <span class="so-tela">🖨️ <b>Para imprimir:</b> role e imprima a página inteira (Ctrl+P no PC, ou "Compartilhar → Imprimir" no celular).</span>
   </div>
 
@@ -279,17 +285,17 @@
         <div class="fin-card bnz">
           <div class="k">Peças drywall</div>
           <div class="v" id="v-bnz">—</div>
-          <div class="note">R$ 0,20 por peça. Sem acessórios, arame, acabamentos, condutores e frete.</div>
+          <div class="note"><span class="nota-preco">R$ 0,20 por peça. </span>Sem acessórios, arame, acabamentos, condutores e frete.</div>
         </div>
         <div class="fin-card secundario">
           <div class="k">Acessórios (pendurais)</div>
           <div class="v" id="v-bnz-acess">—</div>
-          <div class="note">R$ 0,01 por unidade · categoria Acessório Drywall.</div>
+          <div class="note"><span class="nota-preco">R$ 0,01 por unidade · </span>categoria Acessório Drywall.</div>
         </div>
         <div class="fin-card secundario">
           <div class="k">Arame (kg)</div>
           <div class="v" id="v-bnz-arame">—</div>
-          <div class="note">R$ 0,20 por kg · categoria Dry Arame.</div>
+          <div class="note"><span class="nota-preco">R$ 0,20 por kg · </span>categoria Dry Arame.</div>
         </div>
         <div class="fin-card bnz comissao">
           <div class="k">Comissão</div>
@@ -342,7 +348,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v12 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v14 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -463,6 +469,10 @@ const COLS_BNZ = [
   ['quantidade','Peças','num'], ['acessorios','Acess.','num'], ['arame_kg','Arame kg','num'], ['comissao','Comissão','num'],
   ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
 ];
+// v13: true quando o servidor mandou modo_conferencia (login so com 'conferencia'): nenhuma coluna/valor de comissao
+let CONFERENCIA = false;
+function semColComissao(cols){ const i = cols.findIndex(c => c[0]==='comissao'); if(i >= 0) cols.splice(i,1); }
+function tdComissao(p){ return CONFERENCIA ? '' : `<td class="num">${fmtReais(p.comissao || 0)}</td>`; }
 let sortCiaplac = { col:'data_entrega', dir:-1 };
 let sortBnz = { col:'data_entrega', dir:-1 };
 
@@ -518,11 +528,11 @@ function renderListaBnz(pedidos){
     <td class="num">${fmtInt(p.quantidade)}</td>
     <td class="num">${fmtInt(p.acessorios)}</td>
     <td class="num">${fmtInt(p.arame_kg)}</td>
-    <td class="num">${fmtReais(p.comissao || 0)}</td>
+    ${tdComissao(p)}
     <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
   </tr>`).join('');
   return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)
-      <button type="button" class="btn-imprimir-lista" onclick="imprimirListaSemComissao()" title="Imprime só a lista de pedidos, sem valores de comissão">🖨️ Imprimir lista (sem comissão)</button></p>
+      ${CONFERENCIA ? '' : '<button type="button" class="btn-imprimir-lista" onclick="imprimirListaSemComissao()" title="Imprime só a lista de pedidos, sem valores de comissão">🖨️ Imprimir lista (sem comissão)</button>'}</p>
     <div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz">
       <thead>${theadSort(COLS_BNZ, sortBnz)}</thead>
       <tbody>${linhas}</tbody>
@@ -595,7 +605,7 @@ function renderEmitidosForaBnz(){
     <td class="num">${fmtInt(p.quantidade)}</td>
     <td class="num">${fmtInt(p.acessorios)}</td>
     <td class="num">${fmtInt(p.arame_kg)}</td>
-    <td class="num">${fmtReais(p.comissao || 0)}</td>
+    ${tdComissao(p)}
     <td>${p.situacao}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
     ${tdObs(p)}
   </tr>`).join('');
@@ -638,7 +648,7 @@ function renderPorRegiao(lista, ehBnz){
   const linha = (nome, x, n, total) => {
     const cls = total ? ' class="linha-total"' : '';
     return ehBnz
-      ? `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtInt(x.pecas)}</td><td class="num">${fmtInt(x.acess)}</td><td class="num">${fmtInt(x.kg)}</td><td class="num">${fmtReais(x.valor)}</td><td class="num">${fmtReais(x.comissao)}</td></tr>`
+      ? `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtInt(x.pecas)}</td><td class="num">${fmtInt(x.acess)}</td><td class="num">${fmtInt(x.kg)}</td><td class="num">${fmtReais(x.valor)}</td>${CONFERENCIA ? '' : '<td class="num">' + fmtReais(x.comissao) + '</td>'}</tr>`
       : `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtReais(x.valor)}</td></tr>`;
   };
   const corpo = regs.map(r => {
@@ -647,7 +657,7 @@ function renderPorRegiao(lista, ehBnz){
     return linha(r, x, n, false);
   }).join('') + linha('Total', tot, totPedidos, true);
   const cab = ehBnz
-    ? '<tr><th>Região</th><th class="num">Pedidos</th><th class="num">Peças</th><th class="num">Acess.</th><th class="num">Arame kg</th><th class="num">Faturamento</th><th class="num">Comissão</th></tr>'
+    ? '<tr><th>Região</th><th class="num">Pedidos</th><th class="num">Peças</th><th class="num">Acess.</th><th class="num">Arame kg</th><th class="num">Faturamento</th>' + (CONFERENCIA ? '' : '<th class="num">Comissão</th>') + '</tr>'
     : '<tr><th>Região</th><th class="num">Pedidos</th><th class="num">Faturamento</th></tr>';
   const emp = ehBnz ? 'BNZ' : 'CIAPLAC';
   return `<p class="tabela-titulo">${emp} · Faturamento entregue por região ${labelPeriodoAtual()}</p>
@@ -679,8 +689,8 @@ function renderFinanceiro(){
     $("#v-bnz").textContent = fmtInt(pecas);
     $("#v-bnz-acess").textContent = fmtInt(acess);
     $("#v-bnz-arame").textContent = fmtInt(kg);
-    $("#v-bnz-comissao").textContent = fmtReais(comissao);
-    $("#v-bnz-comissao-calc").textContent = fmtReais(pecas*0.20) + ' peças + ' + fmtReais(acess*0.01) + ' acessórios + ' + fmtReais(kg*0.20) + ' arame';
+    $("#v-bnz-comissao").textContent = CONFERENCIA ? "—" : fmtReais(comissao);
+    if(!CONFERENCIA) $("#v-bnz-comissao-calc").textContent = fmtReais(pecas*0.20) + ' peças + ' + fmtReais(acess*0.01) + ' acessórios + ' + fmtReais(kg*0.20) + ' arame';
     $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR'));
     $("#lista-bnz").innerHTML = renderListaBnz(lista);
     $("#regiao-bnz").innerHTML = renderPorRegiao(lista, true);
@@ -695,7 +705,7 @@ function renderFinanceiro(){
 function syncPrintPageStyle(){
   const empLabel = empresa === 'BNZ METAIS' ? 'BNZ METAIS' : (empresa === 'CIAPLAC' ? 'CIAPLAC' : 'BNZ + CIAPLAC (Total)');
   const perLabel = labelPeriodoAtual() || '';
-  const cabecalho = ('Indicadores - Financeiro · ' + empLabel + ' — ' + perLabel).replace(/"/g,'\\"');
+  const cabecalho = ((CONFERENCIA ? 'Conferência de entregas · ' : 'Indicadores - Financeiro · ') + empLabel + ' — ' + perLabel).replace(/"/g,'\\"');
   const rodape = (($('#status')?.textContent || '') + ' · por @pessoaco').replace(/"/g,'\\"');
   const el = $('#print-page-style');
   if(el) el.textContent = '@media print{ @page{ '
@@ -782,6 +792,11 @@ function mostrarAvisoCopia(texto){
 function aplicarDados(data){
   mostraConteudo();
   const fin = data.financeiro || {};
+  // v13: modo conferencia vem do SERVIDOR (os campos de comissao ja chegam apagados)
+  if(data.modo_conferencia && !CONFERENCIA){ CONFERENCIA = true; [COLS_BNZ, COLS_BNZ_NE].forEach(semColComissao); if(sortBnz.col==='comissao') sortBnz = { col:'data_entrega', dir:-1 }; if(sortBnzNE.col==='comissao') sortBnzNE = { col:'data_pedido', dir:1 }; }
+  document.body.classList.toggle('modo-conferencia', CONFERENCIA);
+  $("#selo-conferencia").hidden = !CONFERENCIA;
+  if(CONFERENCIA) $("#titulo-sub").textContent = '— Conferência de Entregas';
   // v36: nome do vendedor vem do login (servidor); sem nome, a linha fica escondida
   if(data.vendedor){ $("#vendedor-nome").textContent = data.vendedor; $("#vendedor-linha").hidden = false; }
   TODOS_CIAPLAC = fin.ciaplac_pedidos || [];
@@ -840,7 +855,7 @@ async function load(){
       mostrarAvisoCopia('');
       $("#status").textContent = 'atualizado ' + new Date().toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
       // reserva neste aparelho (so dado novo de verdade)
-      try { localStorage.setItem(CHAVE_COPIA_LOCAL, JSON.stringify({ user: String(creds.user || '').toLowerCase(), atualizado_em: data.atualizado_em || new Date().toISOString(), vendedor: data.vendedor || '', financeiro: data.financeiro || {} })); } catch(e){}
+      try { localStorage.setItem(CHAVE_COPIA_LOCAL, JSON.stringify({ user: String(creds.user || '').toLowerCase(), atualizado_em: data.atualizado_em || new Date().toISOString(), vendedor: data.vendedor || '', modo_conferencia: !!data.modo_conferencia, financeiro: data.financeiro || {} })); } catch(e){}
     }
   }catch(err){
     // TypeError = fetch nem chegou a ter resposta do servidor (sem internet, DNS, etc) - diferente
@@ -863,5 +878,7 @@ $("#btn-sair").addEventListener("click", logout);
 
 load();
 </script>
+<!-- botao "Compartilhar link" (IALINK, igual em todos os paineis) -->
+<script src="https://pessoaco.github.io/Kpis/link/compartilhar.js?v=1"></script>
 </body>
 </html>
