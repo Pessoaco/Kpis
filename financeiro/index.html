@@ -348,7 +348,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v14 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v15 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -807,10 +807,19 @@ function aplicarDados(data){
   $("#statusbar").textContent = TODOS_CIAPLAC.length + ' pedidos CIAPLAC + ' + TODOS_BNZ.length + ' pedidos BNZ (13 meses)';
   renderFinanceiro();
 }
-function usarCopiaLocal(motivo){
+// v15: a copia so abre com o MESMO login E a MESMA senha (guarda so o hash, nunca a senha)
+async function chaveDoLogin(){
+  try {
+    const txt = String(creds && creds.user || '').toLowerCase() + '|' + String(creds && creds.pass || '');
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join('');
+  } catch(e){ return ''; }
+}
+async function usarCopiaLocal(motivo){
   let c = null;
   try { c = JSON.parse(localStorage.getItem(CHAVE_COPIA_LOCAL) || 'null'); } catch(e){}
   if(!c || !c.financeiro || !creds || c.user !== String(creds.user || '').toLowerCase()) return false;   // v12: so a copia do proprio login
+  const ch = await chaveDoLogin(); if(!ch || c.chave !== ch) return false;   // v15: e com a senha certa
   aplicarDados(c);
   mostrarAvisoCopia('⚠ ' + motivo + ' — mostrando os dados salvos neste aparelho em ' + fmtDataHora(c.atualizado_em) + '. Os números podem estar desatualizados.');
   $("#status").className = "status err";
@@ -834,13 +843,13 @@ async function load(){
     if(r.status === 401 || r.status === 403){ logout(); showLogin("Usuário ou senha errado."); return; }
     if(!r.ok) throw new Error("HTTP "+r.status);
     const data = await r.json();
-    if(data && data.erro){ logout(); showLogin("Usuário ou senha errado."); return; }
+    if(data && data.erro){ try { localStorage.removeItem(CHAVE_COPIA_LOCAL); } catch(e){} logout(); showLogin("Usuário ou senha errado."); return; }
     // v11: login certo, mas sem permissão para o Financeiro
     if(data && data.erro_permissao){ try { localStorage.removeItem(CHAVE_COPIA_LOCAL); } catch(e){} showLogin("Este login não tem acesso ao Financeiro. Fale com o administrador."); return; }
     if(data && data.erro_odoo){
       mostraConteudo();
       // Odoo fora do ar e o servidor ainda nao tinha copia: tenta a reserva deste aparelho
-      if(!usarCopiaLocal('Sistema fora do ar')){
+      if(!(await usarCopiaLocal('Sistema fora do ar'))){
         $("#status").className = "status err";
         $("#status").textContent = "⚠ Sistema fora do ar e ainda não há dados salvos. Tente de novo em alguns minutos.";
       }
@@ -855,13 +864,14 @@ async function load(){
       mostrarAvisoCopia('');
       $("#status").textContent = 'atualizado ' + new Date().toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
       // reserva neste aparelho (so dado novo de verdade)
-      try { localStorage.setItem(CHAVE_COPIA_LOCAL, JSON.stringify({ user: String(creds.user || '').toLowerCase(), atualizado_em: data.atualizado_em || new Date().toISOString(), vendedor: data.vendedor || '', modo_conferencia: !!data.modo_conferencia, financeiro: data.financeiro || {} })); } catch(e){}
+      const chave = await chaveDoLogin();
+      try { localStorage.setItem(CHAVE_COPIA_LOCAL, JSON.stringify({ user: String(creds.user || '').toLowerCase(), chave, atualizado_em: data.atualizado_em || new Date().toISOString(), vendedor: data.vendedor || '', modo_conferencia: !!data.modo_conferencia, financeiro: data.financeiro || {} })); } catch(e){}
     }
   }catch(err){
     // TypeError = fetch nem chegou a ter resposta do servidor (sem internet, DNS, etc) - diferente
     // de um erro HTTP (que já tem resposta e cai no throw lá em cima).
     const semNet = err instanceof TypeError;
-    if(usarCopiaLocal(semNet ? 'Sem internet' : 'Sistema sem resposta')) return;
+    if(await usarCopiaLocal(semNet ? 'Sem internet' : 'Sistema sem resposta')) return;
     mostraConteudo();
     $("#status").className = "status err";
     $("#status").textContent = semNet ? "📡 Sem internet — este painel é só online. Verifique sua conexão." : "erro ao atualizar: " + (err && err.message || err);
