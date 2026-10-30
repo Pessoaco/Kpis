@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel compartilhado · IALINK</title>
+<!-- Link compartilhado — v1 · por @pessoaco
+     Abre SEM login a "foto" de um painel (fluxo n8n Compartilhar_Link_Paineis, webhook compartilhar-link).
+     A foto nao tem codigo nem os outros dados: quem abre nao troca periodo, representada ou vendedor.
+     Ela aparece num quadro isolado (sandbox sem scripts). O link vence em 30 dias. -->
+<style>
+  :root{--bg:#f5f5f7;--ink:#1d1d1f;--soft:#5b5b66;--hair:#dcdce3;--card:#fff;--marca:#2b4a8b;--aviso:#fff7e0;--aviso-ink:#6b4e00}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--bg:#17171b;--ink:#ececf1;--soft:#a9a9b5;--hair:#33333b;--card:#202027;--marca:#8fb0f0;--aviso:#2c2614;--aviso-ink:#e9cf86} }
+  :root[data-theme="dark"]{--bg:#17171b;--ink:#ececf1;--soft:#a9a9b5;--hair:#33333b;--card:#202027;--marca:#8fb0f0;--aviso:#2c2614;--aviso-ink:#e9cf86}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Arial,Helvetica,sans-serif}
+  body{-webkit-user-select:none;user-select:none}
+  .topo{max-width:1400px;margin:0 auto;padding:12px 16px 8px}
+  .info{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+  .info b{color:var(--marca)}
+  .info .peq{font-size:12.5px;color:var(--soft)}
+  .direitos{margin-top:8px;background:var(--aviso);color:var(--aviso-ink);border-radius:8px;padding:7px 10px;font-size:12px}
+  .quadro{max-width:1400px;margin:0 auto;padding:0 16px}
+  iframe{display:block;width:100%;border:0;border-radius:10px;background:#fff;min-height:70vh}
+  .msg{max-width:560px;margin:14vh auto;padding:22px;background:var(--card);border:1px solid var(--hair);border-radius:12px;text-align:center}
+  .rodape{max-width:1400px;margin:0 auto;padding:10px 16px 24px;font-size:12px;color:var(--soft)}
+  .rodape a{color:inherit;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body oncontextmenu="return false">
+<div id="carregando" class="msg">⏳ Abrindo o painel compartilhado…</div>
+
+<div id="tudo" hidden>
+  <div class="topo">
+    <div class="info">
+      <span>📌 <b id="titulo"></b></span>
+      <span class="peq" id="dados-de"></span>
+    </div>
+    <div class="direitos" id="direitos-topo"></div>
+  </div>
+  <div class="quadro"><iframe id="quadro" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Painel compartilhado"></iframe></div>
+  <div class="rodape"><span id="direitos-rodape"></span><br>Link compartilhado · versão v1 · por <a href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+</div>
+
+<script>
+const WEBHOOK = "https://auto.ialink.com.br/webhook/compartilhar-link";
+const DIREITOS = "© IALINK · por @pessoaco — Conteúdo confidencial. Proibida a cópia, reprodução ou distribuição, total ou parcial, dos dados e do formato deste relatório, por qualquer meio, inclusive ferramentas de inteligência artificial (Lei 9.610/98).";
+const $ = s => document.querySelector(s);
+
+function fmt(iso, comHora){
+  const d = new Date(iso); if(isNaN(d.getTime())) return '';
+  return d.toLocaleString('pt-BR', comHora ? {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'} : {day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+function erro(txt){ $("#carregando").innerHTML = '⚠ ' + txt.replace(/</g,'&lt;') + '<br><br><span style="font-size:12px;color:var(--soft)">' + DIREITOS + '</span>'; }
+async function descompacta(b64){
+  const bin = atob(b64); const u = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+}
+function ajustaAltura(){
+  const f = $("#quadro");
+  try { const d = f.contentDocument; if(d && d.documentElement) f.style.height = Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0) + 'px'; } catch(e){}
+}
+
+(async function(){
+  const t = new URLSearchParams(location.search).get('t') || '';
+  if(!/^[0-9a-f]{16,64}$/i.test(t)){ erro('Link incompleto. Peça o link de novo a quem compartilhou.'); return; }
+  let r;
+  try {
+    const resp = await fetch(WEBHOOK, { method: 'POST', body: new URLSearchParams({ acao: 'abrir', token: t }), cache: 'no-store' });
+    r = await resp.json();
+  } catch(e){ erro('Sem resposta do servidor. Verifique a internet e tente de novo.'); return; }
+  if(!r || !r.ok){ erro((r && r.erro) || 'Link não encontrado.'); return; }
+  let html;
+  try { html = await descompacta(r.conteudo || ''); } catch(e){ erro('Não deu para abrir este link. Peça um link novo.'); return; }
+  // na foto: sem selecionar texto e sem botao direito
+  html = html.replace(/<\/head>/i, '<style>*{-webkit-user-select:none!important;user-select:none!important}</style></head>');
+  document.title = (r.titulo || 'Painel') + ' · compartilhado';
+  $("#titulo").textContent = r.titulo || 'Painel';
+  $("#dados-de").textContent = 'Dados de ' + fmt(r.criado_em, true) + (r.criado_por ? ' · compartilhado por ' + r.criado_por : '') + ' · link vale até ' + fmt(r.expira_em) + ' · não é o painel ao vivo';
+  $("#direitos-topo").textContent = DIREITOS;
+  $("#direitos-rodape").textContent = DIREITOS;
+  const f = $("#quadro");
+  f.addEventListener('load', () => {
+    ajustaAltura();
+    try { f.contentDocument.addEventListener('contextmenu', e => e.preventDefault()); f.contentDocument.addEventListener('copy', e => e.preventDefault()); } catch(e){}
+    setTimeout(ajustaAltura, 800); setTimeout(ajustaAltura, 2500);
+  });
+  f.srcdoc = html;
+  $("#carregando").hidden = true;
+  $("#tudo").hidden = false;
+  window.addEventListener('resize', ajustaAltura);
+})();
+</script>
+</body>
+</html>
