@@ -192,11 +192,15 @@
     table.tabela-fin th:nth-child(6){width:11%}
     table.tabela-fin th:nth-child(7){width:11%}
     table.tabela-fin th:nth-child(8){width:10%}
-    /* v17: tabela BNZ tem 12 colunas (... Pedido, Obs. comissao): UF e numeros enxutos para caber a Obs. */
-    #tabela-bnz th:nth-child(1){width:15%} #tabela-bnz th:nth-child(2){width:10%} #tabela-bnz th:nth-child(3){width:9%}
-    #tabela-bnz th:nth-child(4){width:3%} #tabela-bnz th:nth-child(5){width:6%} #tabela-bnz th:nth-child(6){width:5%}
-    #tabela-bnz th:nth-child(7){width:5%} #tabela-bnz th:nth-child(8){width:7%} #tabela-bnz th:nth-child(9){width:7%}
-    #tabela-bnz th:nth-child(10){width:7%} #tabela-bnz th:nth-child(11){width:9%} #tabela-bnz th:nth-child(12){width:17%}
+    /* v19: letra maior na impressao + numeros com espaco (nao cortar "1.080" com ...) + Obs. mais estreita */
+    table.tabela-fin{font-size:.8rem}
+    table.tabela-fin th{font-size:.7rem;white-space:normal;vertical-align:bottom}
+    table.tabela-fin td.num{text-overflow:clip}
+    /* tabela BNZ tem 12 colunas (... Pedido, Obs. comissao) */
+    #tabela-bnz th:nth-child(1){width:14%} #tabela-bnz th:nth-child(2){width:10%} #tabela-bnz th:nth-child(3){width:9%}
+    #tabela-bnz th:nth-child(4){width:3%} #tabela-bnz th:nth-child(5){width:7%} #tabela-bnz th:nth-child(6){width:6%}
+    #tabela-bnz th:nth-child(7){width:6%} #tabela-bnz th:nth-child(8){width:9%} #tabela-bnz th:nth-child(9){width:7%}
+    #tabela-bnz th:nth-child(10){width:7%} #tabela-bnz th:nth-child(11){width:10%} #tabela-bnz th:nth-child(12){width:12%}
     /* v17: CIAPLAC entregues tem 9 colunas (... Pedido, Obs. comissao) */
     #tabela-ciaplac th:nth-child(1){width:20%} #tabela-ciaplac th:nth-child(2){width:13%} #tabela-ciaplac th:nth-child(3){width:11%}
     #tabela-ciaplac th:nth-child(4){width:3%} #tabela-ciaplac th:nth-child(5){width:10%} #tabela-ciaplac th:nth-child(6){width:8%}
@@ -208,8 +212,12 @@
     .btn-imprimir-lista{display:none!important}
     .so-tela,.link-abrir{display:none!important}
     body.print-lista #regiao-bnz,body.print-lista #regiao-ciaplac{display:none!important}
-    #tabela-regiao-bnz th:nth-child(1){width:28%} #tabela-regiao-bnz th:nth-child(n+2){width:12%}
-    #tabela-regiao-ciaplac th:nth-child(1){width:50%} #tabela-regiao-ciaplac th:nth-child(n+2){width:25%}
+    /* v19: tabela por regiao compacta (nao espalhada pela folha inteira) */
+    .tabela-regiao{max-width:72%}
+    #regiao-ciaplac .tabela-regiao{max-width:45%}
+    #tabela-regiao-bnz th:nth-child(1){width:22%} #tabela-regiao-bnz th:nth-child(2){width:10%} #tabela-regiao-bnz th:nth-child(3){width:13%}
+    #tabela-regiao-bnz th:nth-child(4){width:12%} #tabela-regiao-bnz th:nth-child(5){width:11%} #tabela-regiao-bnz th:nth-child(6){width:18%} #tabela-regiao-bnz th:nth-child(7){width:14%}
+    #tabela-regiao-ciaplac th:nth-child(1){width:46%} #tabela-regiao-ciaplac th:nth-child(2){width:18%} #tabela-regiao-ciaplac th:nth-child(3){width:36%}
     /* "Imprimir lista (sem comissao)": so a tabela BNZ, sem cards, grafico, CIAPLAC e coluna Comissao */
     body.print-lista .masthead,body.print-lista .aviso-data,body.print-lista .controls,
     body.print-lista #sec-bnz .cards,body.print-lista #sec-ciaplac,body.print-lista .status{display:none!important}
@@ -217,10 +225,10 @@
     body.print-lista #tabela-bnz th:nth-child(8),body.print-lista #tabela-bnz td:nth-child(8){display:none!important}
     body.print-lista #tabela-bnz-emitidos th:nth-child(8),body.print-lista #tabela-bnz-emitidos td:nth-child(8){display:none!important}
     /* tabela "emitidos e nao entregues": 12 colunas, Obs. pode quebrar linha */
-    #tabela-bnz-emitidos th:nth-child(1){width:15%} #tabela-bnz-emitidos th:nth-child(2){width:10%} #tabela-bnz-emitidos th:nth-child(3){width:8%}
-    #tabela-bnz-emitidos th:nth-child(4){width:3%} #tabela-bnz-emitidos th:nth-child(5){width:6%} #tabela-bnz-emitidos th:nth-child(6){width:5%}
-    #tabela-bnz-emitidos th:nth-child(7){width:5%} #tabela-bnz-emitidos th:nth-child(8){width:7%} #tabela-bnz-emitidos th:nth-child(9){width:11%}
-    #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:8%} #tabela-bnz-emitidos th:nth-child(12){width:18%}
+    #tabela-bnz-emitidos th:nth-child(1){width:13%} #tabela-bnz-emitidos th:nth-child(2){width:9%} #tabela-bnz-emitidos th:nth-child(3){width:8%}
+    #tabela-bnz-emitidos th:nth-child(4){width:3%} #tabela-bnz-emitidos th:nth-child(5){width:7%} #tabela-bnz-emitidos th:nth-child(6){width:6%}
+    #tabela-bnz-emitidos th:nth-child(7){width:6%} #tabela-bnz-emitidos th:nth-child(8){width:9%} #tabela-bnz-emitidos th:nth-child(9){width:11%}
+    #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:9%} #tabela-bnz-emitidos th:nth-child(12){width:12%}
     #tabela-ciaplac-emitidos th:nth-child(1){width:20%} #tabela-ciaplac-emitidos th:nth-child(2){width:13%} #tabela-ciaplac-emitidos th:nth-child(3){width:11%}
     #tabela-ciaplac-emitidos th:nth-child(4){width:3%} #tabela-ciaplac-emitidos th:nth-child(5){width:10%} #tabela-ciaplac-emitidos th:nth-child(6){width:12%}
     #tabela-ciaplac-emitidos th:nth-child(7){width:8%} #tabela-ciaplac-emitidos th:nth-child(8){width:8%} #tabela-ciaplac-emitidos th:nth-child(9){width:15%}
@@ -258,6 +266,7 @@
       <button id="btn-imprimir" class="btn-imprimir-icone" onclick="document.body.classList.remove('print-lista');window.print()" title="Imprimir / Salvar PDF">🖨️</button>
       <!-- v14: link que abre sem login com a foto desta tela (30 dias). Quem tem o Financeiro completo escolhe com/sem comissao -->
       <button id="btn-compartilhar" class="btn-imprimir-icone" onclick="IALinkCompartilhar({ painel:'financeiro', titulo: () => (CONFERENCIA ? 'Conferência de Entregas' : 'Financeiro') + ' · ' + (empresa || 'BNZ + CIAPLAC') + ' · ' + labelPeriodoAtual().replace(/^(no|nos|em|de)\s+/i, ''), perguntarComissao: () => !CONFERENCIA })" title="Compartilhar link (abre sem login, vale 30 dias)">🔗</button>
+      <span id="versao-topo" title="versão desta tela (a mesma do rodapé)" style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;color:var(--ink-soft);border:1px solid var(--hair);border-radius:999px;padding:1px 8px"></span>
       <div class="meta" id="hoje">—</div>
     </div>
   </header>
@@ -358,7 +367,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v18 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v19 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -899,6 +908,10 @@ $("#login-form").addEventListener("submit", e => {
 $("#btn-sair").addEventListener("click", logout);
 
 load();
+</script>
+<script>
+// versao no topo = a mesma do rodape (so se edita o rodape)
+(function(){ const r = Array.from(document.querySelectorAll('.versao-pagina,.updated')).map(e => (e.textContent.match(/vers\u00e3o (v\d+)/) || [])[1]).find(Boolean); const el = document.getElementById('versao-topo'); if(el){ el.textContent = r || ''; el.hidden = !r; } })();
 </script>
 <!-- botao "Compartilhar link" (IALINK, igual em todos os paineis) -->
 <script src="https://pessoaco.github.io/Kpis/link/compartilhar.js?v=1"></script>
