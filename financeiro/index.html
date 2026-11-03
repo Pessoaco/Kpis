@@ -197,14 +197,16 @@
     table.tabela-fin th{font-size:.7rem;white-space:normal;vertical-align:bottom}
     table.tabela-fin td.num{text-overflow:clip}
     /* tabela BNZ tem 12 colunas (... Pedido, Obs. comissao) */
+    /* v19: larguras na ordem nova (cliente > pedido > data pedido > pecas > entrega/situacao > comissao/valor > obs) */
     #tabela-bnz th:nth-child(1){width:14%} #tabela-bnz th:nth-child(2){width:10%} #tabela-bnz th:nth-child(3){width:9%}
-    #tabela-bnz th:nth-child(4){width:3%} #tabela-bnz th:nth-child(5){width:7%} #tabela-bnz th:nth-child(6){width:6%}
-    #tabela-bnz th:nth-child(7){width:6%} #tabela-bnz th:nth-child(8){width:9%} #tabela-bnz th:nth-child(9){width:7%}
-    #tabela-bnz th:nth-child(10){width:7%} #tabela-bnz th:nth-child(11){width:10%} #tabela-bnz th:nth-child(12){width:12%}
+    #tabela-bnz th:nth-child(4){width:3%} #tabela-bnz th:nth-child(5){width:10%} #tabela-bnz th:nth-child(6){width:7%}
+    #tabela-bnz th:nth-child(7){width:7%} #tabela-bnz th:nth-child(8){width:6%} #tabela-bnz th:nth-child(9){width:6%}
+    #tabela-bnz th:nth-child(10){width:7%} #tabela-bnz th:nth-child(11){width:9%} #tabela-bnz th:nth-child(12){width:12%}
     /* v17: CIAPLAC entregues tem 9 colunas (... Pedido, Obs. comissao) */
+    /* v19: larguras na ordem nova (cliente > pedido > data pedido > pecas > entrega/situacao > comissao/valor > obs) */
     #tabela-ciaplac th:nth-child(1){width:20%} #tabela-ciaplac th:nth-child(2){width:13%} #tabela-ciaplac th:nth-child(3){width:11%}
-    #tabela-ciaplac th:nth-child(4){width:3%} #tabela-ciaplac th:nth-child(5){width:10%} #tabela-ciaplac th:nth-child(6){width:8%}
-    #tabela-ciaplac th:nth-child(7){width:8%} #tabela-ciaplac th:nth-child(8){width:9%} #tabela-ciaplac th:nth-child(9){width:18%}
+    #tabela-ciaplac th:nth-child(4){width:3%} #tabela-ciaplac th:nth-child(5){width:9%} #tabela-ciaplac th:nth-child(6){width:8%}
+    #tabela-ciaplac th:nth-child(7){width:8%} #tabela-ciaplac th:nth-child(8){width:10%} #tabela-ciaplac th:nth-child(9){width:18%}
     .kpi-row{grid-template-columns:1.4fr 1fr 1fr 1.4fr 1fr;gap:8px}
     .kpi-row .fin-card{padding:10px 12px}
     .kpi-row .fin-card .v{font-size:1.5rem}
@@ -222,16 +224,18 @@
     body.print-lista .masthead,body.print-lista .aviso-data,body.print-lista .controls,
     body.print-lista #sec-bnz .cards,body.print-lista #sec-ciaplac,body.print-lista .status{display:none!important}
     body.print-lista #sec-bnz{margin-top:0}
-    body.print-lista #tabela-bnz th:nth-child(8),body.print-lista #tabela-bnz td:nth-child(8){display:none!important}
-    body.print-lista #tabela-bnz-emitidos th:nth-child(8),body.print-lista #tabela-bnz-emitidos td:nth-child(8){display:none!important}
+    body.print-lista #tabela-bnz th:nth-child(11),body.print-lista #tabela-bnz td:nth-child(11){display:none!important}
+    body.print-lista #tabela-bnz-emitidos th:nth-child(11),body.print-lista #tabela-bnz-emitidos td:nth-child(11){display:none!important}
     /* tabela "emitidos e nao entregues": 12 colunas, Obs. pode quebrar linha */
+    /* v19: larguras na ordem nova (cliente > pedido > data pedido > pecas > entrega/situacao > comissao/valor > obs) */
     #tabela-bnz-emitidos th:nth-child(1){width:13%} #tabela-bnz-emitidos th:nth-child(2){width:9%} #tabela-bnz-emitidos th:nth-child(3){width:8%}
-    #tabela-bnz-emitidos th:nth-child(4){width:3%} #tabela-bnz-emitidos th:nth-child(5){width:7%} #tabela-bnz-emitidos th:nth-child(6){width:6%}
-    #tabela-bnz-emitidos th:nth-child(7){width:6%} #tabela-bnz-emitidos th:nth-child(8){width:9%} #tabela-bnz-emitidos th:nth-child(9){width:11%}
-    #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:9%} #tabela-bnz-emitidos th:nth-child(12){width:12%}
+    #tabela-bnz-emitidos th:nth-child(4){width:3%} #tabela-bnz-emitidos th:nth-child(5){width:9%} #tabela-bnz-emitidos th:nth-child(6){width:7%}
+    #tabela-bnz-emitidos th:nth-child(7){width:7%} #tabela-bnz-emitidos th:nth-child(8){width:6%} #tabela-bnz-emitidos th:nth-child(9){width:6%}
+    #tabela-bnz-emitidos th:nth-child(10){width:11%} #tabela-bnz-emitidos th:nth-child(11){width:9%} #tabela-bnz-emitidos th:nth-child(12){width:12%}
+    /* v19: larguras na ordem nova (cliente > pedido > data pedido > pecas > entrega/situacao > comissao/valor > obs) */
     #tabela-ciaplac-emitidos th:nth-child(1){width:20%} #tabela-ciaplac-emitidos th:nth-child(2){width:13%} #tabela-ciaplac-emitidos th:nth-child(3){width:11%}
-    #tabela-ciaplac-emitidos th:nth-child(4){width:3%} #tabela-ciaplac-emitidos th:nth-child(5){width:10%} #tabela-ciaplac-emitidos th:nth-child(6){width:12%}
-    #tabela-ciaplac-emitidos th:nth-child(7){width:8%} #tabela-ciaplac-emitidos th:nth-child(8){width:8%} #tabela-ciaplac-emitidos th:nth-child(9){width:15%}
+    #tabela-ciaplac-emitidos th:nth-child(4){width:3%} #tabela-ciaplac-emitidos th:nth-child(5){width:8%} #tabela-ciaplac-emitidos th:nth-child(6){width:8%}
+    #tabela-ciaplac-emitidos th:nth-child(7){width:12%} #tabela-ciaplac-emitidos th:nth-child(8){width:10%} #tabela-ciaplac-emitidos th:nth-child(9){width:15%}
     .nota-emitidos b{font-weight:400}
     /* "Imprimir lista (sem comissao)": a coluna 8 (Comissao) some e as outras se espalham (mesmas larguras acima) */
   }
@@ -479,14 +483,15 @@ function renderEvolucao(pontosRaw, corVar, fmt){
   </svg></div>`;
 }
 
+// v19: ORDEM DE LEITURA da diretora (vai conferindo e dando check): cliente > pedido > data do pedido > pecas > data de entrega > comissao > obs.
 const COLS_CIAPLAC = [
   ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','UF','str'],
-  ['valor','Valor','num'], ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['obs_comissao','Obs. comissão','str']
+  ['pedido','Pedido','str'], ['data_pedido','Data Pedido','str'], ['data_entrega','Dt Entrega','str'], ['valor','Valor','num'], ['obs_comissao','Obs. comissão','str']
 ];
 const COLS_BNZ = [
   ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','UF','str'],
-  ['quantidade','Peças','num'], ['acessorios','Acess.','num'], ['arame_kg','Arame kg','num'], ['comissao','Comissão','num'],
-  ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['obs_comissao','Obs. comissão','str']
+  ['pedido','Pedido','str'], ['data_pedido','Data Pedido','str'], ['quantidade','Peças','num'], ['acessorios','Acess.','num'], ['arame_kg','Arame kg','num'],
+  ['data_entrega','Dt Entrega','str'], ['comissao','Comissão','num'], ['obs_comissao','Obs. comissão','str']
 ];
 // v13: true quando o servidor mandou modo_conferencia (login so com 'conferencia'): nenhuma coluna/valor de comissao
 let CONFERENCIA = false;
@@ -532,8 +537,8 @@ function renderListaCiaplac(pedidos){
   const ordenados = ordenarLista(pedidos, COLS_CIAPLAC, sortCiaplac);
   const linhas = ordenados.map(p => `<tr>
     ${tdsCliente(p)}
-    <td class="num">${fmtReais(p.valor)}</td>
-    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>${tdObsCom(p)}
+    <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td><td>${fmtData(p.data_entrega)}</td>
+    <td class="num">${fmtReais(p.valor)}</td>${tdObsCom(p)}
   </tr>`).join('');
   return `<p class="tabela-titulo">CIAPLAC · Lista completa (${pedidos.length} pedidos)</p>
     <div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac">
@@ -546,11 +551,12 @@ function renderListaBnz(pedidos){
   const ordenados = ordenarLista(pedidos, COLS_BNZ, sortBnz);
   const linhas = ordenados.map(p => `<tr>
     ${tdsCliente(p)}
+    <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td>
     <td class="num">${fmtInt(p.quantidade)}</td>
     <td class="num">${fmtInt(p.acessorios)}</td>
     <td class="num">${fmtInt(p.arame_kg)}</td>
-    ${tdComissao(p)}
-    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>${tdObsCom(p)}
+    <td>${fmtData(p.data_entrega)}</td>
+    ${tdComissao(p)}${tdObsCom(p)}
   </tr>`).join('');
   return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)
       ${CONFERENCIA ? '' : '<button type="button" class="btn-imprimir-lista" onclick="imprimirListaSemComissao()" title="Imprime só a lista de pedidos, sem valores de comissão">🖨️ Imprimir lista (sem comissão)</button>'}</p>
@@ -612,8 +618,9 @@ function tituloNaoEntregues(emp, n){
 }
 function tdObs(p){ return `<td class="col-obs" contenteditable="true" data-pedido="${escHtml(p.pedido)}" oninput="salvarObs(this)">${escHtml(lerObs(p.pedido))}</td>`; }
 // v9: colunas ordenaveis (clicar no titulo da coluna) nas listas de nao entregues no mes
-const COLS_BNZ_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['quantidade','Peças','num'],['acessorios','Acess.','num'],['arame_kg','Arame kg','num'],['comissao','Comissão','num'],['situacao','Situação','str'],['data_pedido','Data Pedido','str'],['pedido','Pedido','str'],['obs_comissao','Obs. comissão','str']];
-const COLS_CIA_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['valor','Valor','num'],['situacao','Situação','str'],['data_pedido','Data Pedido','str'],['pedido','Pedido','str'],['obs_comissao','Obs. comissão','str']];
+// v19: mesma ordem de leitura das listas de entregues (a Situacao fica no lugar da data de entrega)
+const COLS_BNZ_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['pedido','Pedido','str'],['data_pedido','Data Pedido','str'],['quantidade','Peças','num'],['acessorios','Acess.','num'],['arame_kg','Arame kg','num'],['situacao','Situação','str'],['comissao','Comissão','num'],['obs_comissao','Obs. comissão','str']];
+const COLS_CIA_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['pedido','Pedido','str'],['data_pedido','Data Pedido','str'],['situacao','Situação','str'],['valor','Valor','num'],['obs_comissao','Obs. comissão','str']];
 let sortBnzNE = { col:'data_pedido', dir:1 };
 let sortCiaNE = { col:'data_pedido', dir:1 };
 function comObs(lista){ return lista; }   // v16: a obs agora vem do sistema (obs_comissao), nao do navegador
@@ -623,12 +630,12 @@ function renderEmitidosForaBnz(){
   if(!lista.length) return titulo + '<div class="empty-msg">Todos os pedidos foram entregues dentro do mês.</div>';
   const linhas = lista.map(p => `<tr>
     ${tdsCliente(p)}
+    <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td>
     <td class="num">${fmtInt(p.quantidade)}</td>
     <td class="num">${fmtInt(p.acessorios)}</td>
     <td class="num">${fmtInt(p.arame_kg)}</td>
-    ${tdComissao(p)}
-    <td>${p.situacao}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
-    ${tdObsCom(p)}
+    <td>${p.situacao}</td>
+    ${tdComissao(p)}${tdObsCom(p)}
   </tr>`).join('');
   return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz-emitidos">
       <thead>${theadSort(COLS_BNZ_NE, sortBnzNE)}</thead>
@@ -641,8 +648,8 @@ function renderEmitidosForaCiaplac(){
   if(!lista.length) return titulo + '<div class="empty-msg">Todos os pedidos foram entregues dentro do mês.</div>';
   const linhas = lista.map(p => `<tr>
     ${tdsCliente(p)}
+    <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td><td>${p.situacao}</td>
     <td class="num">${fmtReais(p.valor || 0)}</td>
-    <td>${p.situacao}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
     ${tdObsCom(p)}
   </tr>`).join('');
   return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac-emitidos">
