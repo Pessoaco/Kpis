@@ -183,7 +183,24 @@
     /* razão social completa do cliente toma espaço demais no papel — trunca com "..." só na impressão,
        pra sobrar largura pra nome fantasia/região/efetivo/atraso aparecerem inteiros */
     table.tabela-entrega td:first-child{max-width:80px;overflow:hidden;text-overflow:ellipsis}
+    /* v6: Obs. de entrega quebra linha no papel, sem empurrar a tabela para fora da folha */
+    table.tabela-entrega td.col-just{min-width:0;max-width:none;white-space:normal}
+    /* v6: lista completa com 11 colunas cabendo na folha A4 (larguras fixas; texto longo corta com ...; Obs. quebra linha) */
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega{table-layout:fixed;width:100%}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th,.tabela-wrap:not(.regiao-resumo) table.tabela-entrega td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th{white-space:normal;vertical-align:bottom}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega td.col-just{white-space:normal}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega td:first-child{max-width:none}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(1){width:12%} .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(2){width:11%}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(3){width:9%} .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(4){width:5%}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(5){width:10%} .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(6){width:8%}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(7){width:6%} .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(8){width:8%}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(9){width:8%} .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(10){width:7%}
+    .tabela-wrap:not(.regiao-resumo) table.tabela-entrega th:nth-child(11){width:16%}
   }
+  /* v6: coluna Obs. de entrega + nota da regra */
+  table.tabela-entrega td.col-just{white-space:normal;min-width:140px;font-size:.92em;color:var(--ink)}
+  .nota-regra{margin:6px 0 0;font-size:.72rem;color:var(--ink-soft)}
 </style>
 <style id="print-page-style"></style>
 </head>
@@ -230,7 +247,7 @@
 
   <p class="updated">Indicadores - Prazo de Entrega · atualizado em <span id="updated-at">—</span></p>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <p class="updated">Prazo de Entrega · versão v5 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></p>
+  <p class="updated">Prazo de Entrega · versão v6 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></p>
 </div>
 
 <script>
@@ -288,9 +305,13 @@ function filtrarPorCliente(termo){
   ).sort((a,b) => b.data_pedido < a.data_pedido ? -1 : (b.data_pedido > a.data_pedido ? 1 : 0));
 }
 
+// v6: Prazo e atraso em DIAS UTEIS (sem sab/dom e feriado nacional) - servidor v15. A Obs. de entrega (anotada na
+// transferencia, ex.: limite de credito do cliente) so EXPLICA o atraso: o atraso CONTINUA contando (decisao da Leidi, 03/11).
+const atrasou = p => p.atraso_dias > 0;
+const esc6 = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function renderResumoCliente(lista){
   const comEfetivo = lista.filter(p => p.efetivo);
-  const atrasados = comEfetivo.filter(p => p.atraso_dias > 0);
+  const atrasados = comEfetivo.filter(atrasou);
   const noPrazo = comEfetivo.length - atrasados.length;
   // Só conta como "ainda sem entrega" pedido recente (a partir de 01/08) — pedido antigo sem
   // effective_date é falta de registro histórico, não pendência de verdade (mesmo critério
@@ -397,7 +418,7 @@ function renderLinhaFiltro(){
 function renderCurvaACard(realizadasBase){
   const curvaA = realizadasBase.filter(p => p.curva_a);
   const total = curvaA.length;
-  const noPrazo = curvaA.filter(p => p.atraso_dias <= 0).length;
+  const noPrazo = curvaA.filter(p => !atrasou(p)).length;
   const foraPrazo = total - noPrazo;
   const pctNoPrazo = total ? Math.round(100*noPrazo/total) : 0;
   const pctForaPrazo = total ? 100 - pctNoPrazo : 0;
@@ -419,8 +440,8 @@ function renderCurvaACard(realizadasBase){
 const fmtBRLp = n => Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 function renderStatsNovos(realizadas, pendentesQtd, realizadasBase, pendentesValor){
   const total = realizadas.length;
-  const noPrazo = realizadas.filter(p => p.atraso_dias <= 0);
-  const foraPrazo = realizadas.filter(p => p.atraso_dias > 0);
+  const noPrazo = realizadas.filter(p => !atrasou(p));
+  const foraPrazo = realizadas.filter(atrasou);
   const pctNoPrazo = total ? Math.round(100*noPrazo.length/total) : 0;
   const pctForaPrazo = total ? Math.round(100*foraPrazo.length/total) : 0;
   // Atraso médio = média só de QUEM ATRASOU (atraso_dias > 0), não mistura com quem chegou adiantado.
@@ -458,7 +479,7 @@ function renderStatsNovos(realizadas, pendentesQtd, realizadasBase, pendentesVal
       </div>
       <div class="stat ${atrasoMedio>0?'critical':''}" ${foraPrazo.length?'data-goto-forapraz style="cursor:pointer"':''}>
         <span class="k">Atraso Médio</span>
-        <span class="v">${atrasoMedio>0?'+':''}${Math.round(atrasoMedio)||0}d</span>
+        <span class="v">${atrasoMedio>0?'+':''}${Math.round(atrasoMedio)||0}d <span style="font-size:.55em;font-weight:500">úteis</span></span>
         <span class="note">Só entre os que atrasaram (${foraPrazo.length} pedido${foraPrazo.length===1?'':'s'})${foraPrazo.length?' · <span style="color:var(--critical);font-weight:600">toque para ver ↗</span>':''}</span>
       </div>
       ${renderCurvaACard(realizadasBase || realizadas)}
@@ -468,7 +489,8 @@ function renderStatsNovos(realizadas, pendentesQtd, realizadasBase, pendentesVal
         ${pendentesValor != null ? `<span class="v2">${fmtBRLp(pendentesValor)}</span>` : ''}
         <span class="note">Qualquer data, ainda sem entrega (não segue o período) · <span style="color:var(--series-previsto);font-weight:600">toque para ver ↗</span></span>
       </div>
-    </div>`;
+    </div>
+    <p class="nota-regra">Prazo e atraso contados em <b>dias úteis</b> (sem sábado, domingo e feriado nacional). A coluna <b>Obs. de entrega</b> mostra o motivo anotado na entrega (o atraso continua contando).</p>`;
 }
 
 function renderRegiao(realizadas){
@@ -481,7 +503,7 @@ function renderRegiao(realizadas){
     if(!porRegiao[r]) porRegiao[r] = { total:0, noPrazo:0, somaAtraso:0, qtdAtrasado:0 };
     const d = porRegiao[r];
     d.total++;
-    if(p.atraso_dias > 0){ d.somaAtraso += p.atraso_dias; d.qtdAtrasado++; }
+    if(atrasou(p)){ d.somaAtraso += p.atraso_dias; d.qtdAtrasado++; }
     else d.noPrazo++;
   });
   const linhas = Object.entries(porRegiao).sort((a,b) => b[1].total-a[1].total);
@@ -510,7 +532,7 @@ function renderEvolucao(realizadas){
     const key = d.getFullYear() + '-' + d.getMonth();
     if(!porMes[key]) porMes[key] = { total:0, noPrazo:0, ano:d.getFullYear(), mes:d.getMonth() };
     porMes[key].total++;
-    if(p.atraso_dias <= 0) porMes[key].noPrazo++;
+    if(!atrasou(p)) porMes[key].noPrazo++;
   });
   const anoAtual = new Date().getFullYear();
   const pontos = Object.keys(porMes).sort().map(k => {
@@ -566,8 +588,8 @@ function renderEvolucao(realizadas){
 
 const COLS_ENTREGA = [
   ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['estado','Estado','str'],
-  ['regiao','Região','str'], ['efetivo','Dt Entrega','str'], ['atraso_dias','Atraso','num'],
-  ['previsto','Previsto','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
+  ['regiao','Região','str'], ['efetivo','Dt Entrega','str'], ['atraso_dias','Atraso (d. úteis)','num'],
+  ['previsto','Previsto','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['justificativa','Obs. de entrega','str']
 ];
 function ordenarEntrega(lista){
   const colDef = COLS_ENTREGA.find(c => c[0]===sortEntrega.col);
@@ -618,6 +640,7 @@ function renderTabela(pedidosOriginais){
       <td>${fmtDateBR(p.previsto)}</td>
       <td>${fmtDateBR(p.data_pedido)}</td>
       <td>${p.pedido||'—'}</td>
+      <td class="col-just">${esc6(p.justificativa)}</td>
     </tr>`;
   }).join('');
   return `
@@ -674,7 +697,7 @@ function renderEntrega(){
   else if(filtroSoPendentes) baseTabela = todosPendentes();
   else if(filtroRegiao) baseTabela = realizadasFiltradas;
   else if(filtroCurvaA) baseTabela = pedidos.filter(p => p.curva_a);
-  else if(filtroForaPrazo) baseTabela = realizadasFiltradas.filter(p => p.atraso_dias > 0);
+  else if(filtroForaPrazo) baseTabela = realizadasFiltradas.filter(atrasou);
 
   $('#entrega-body').innerHTML = renderLinhaFiltro() + renderStatsNovos(realizadasFiltradas, pendentesQtd, realizadas, pendentesValor) + renderEvolucao(realizadasFiltradas) + renderRegiao(realizadas) + renderTabela(baseTabela);
   syncPrintPageStyle();
