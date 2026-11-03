@@ -348,7 +348,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v15 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v16 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -462,16 +462,18 @@ function renderEvolucao(pontosRaw, corVar, fmt){
 
 const COLS_CIAPLAC = [
   ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','UF','str'],
-  ['valor','Valor','num'], ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
+  ['valor','Valor','num'], ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['obs_comissao','Obs. comissão','str']
 ];
 const COLS_BNZ = [
   ['cliente','Cliente','str'], ['fantasia','Nome Fantasia','str'], ['cidade','Cidade','str'], ['uf','UF','str'],
   ['quantidade','Peças','num'], ['acessorios','Acess.','num'], ['arame_kg','Arame kg','num'], ['comissao','Comissão','num'],
-  ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str']
+  ['data_entrega','Dt Entrega','str'], ['data_pedido','Data Pedido','str'], ['pedido','Pedido','str'], ['obs_comissao','Obs. comissão','str']
 ];
 // v13: true quando o servidor mandou modo_conferencia (login so com 'conferencia'): nenhuma coluna/valor de comissao
 let CONFERENCIA = false;
-function semColComissao(cols){ const i = cols.findIndex(c => c[0]==='comissao'); if(i >= 0) cols.splice(i,1); }
+function semColComissao(cols){ for(let i = cols.length - 1; i >= 0; i--) if(/comiss/.test(cols[i][0])) cols.splice(i,1); }
+// v16: Obs. comissao = anotacao feita na ENTREGA no sistema (campo 'Obs. comissao pagto'), igual em qualquer aparelho
+function tdObsCom(p){ return CONFERENCIA ? '' : tdTrunc(escHtml(p.obs_comissao || ''), 'col-obs'); }
 function tdComissao(p){ return CONFERENCIA ? '' : `<td class="num">${fmtReais(p.comissao || 0)}</td>`; }
 let sortCiaplac = { col:'data_entrega', dir:-1 };
 let sortBnz = { col:'data_entrega', dir:-1 };
@@ -512,7 +514,7 @@ function renderListaCiaplac(pedidos){
   const linhas = ordenados.map(p => `<tr>
     ${tdsCliente(p)}
     <td class="num">${fmtReais(p.valor)}</td>
-    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
+    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>${tdObsCom(p)}
   </tr>`).join('');
   return `<p class="tabela-titulo">CIAPLAC · Lista completa (${pedidos.length} pedidos)</p>
     <div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac">
@@ -529,7 +531,7 @@ function renderListaBnz(pedidos){
     <td class="num">${fmtInt(p.acessorios)}</td>
     <td class="num">${fmtInt(p.arame_kg)}</td>
     ${tdComissao(p)}
-    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
+    <td>${fmtData(p.data_entrega)}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>${tdObsCom(p)}
   </tr>`).join('');
   return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)
       ${CONFERENCIA ? '' : '<button type="button" class="btn-imprimir-lista" onclick="imprimirListaSemComissao()" title="Imprime só a lista de pedidos, sem valores de comissão">🖨️ Imprimir lista (sem comissão)</button>'}</p>
@@ -587,15 +589,15 @@ function resumoEmitidosForaCiaplac(){
 }
 function tituloNaoEntregues(emp, n){
   return `<p class="tabela-titulo">${emp} · Pedidos não entregues dentro do mês ${labelPeriodoAtual()} (${n} pedidos)</p>
-    <p class="nota-emitidos">Pedidos emitidos até o fim do período que não foram entregues (inteiros ou em parte) dentro dele — inclusive de meses anteriores. Entram no fechamento do mês em que forem entregues. A coluna <b>Situação</b> mostra como estava no dia em que o relatório foi tirado: “Já entregue em …” (entregue depois do fim do mês) ou “Pendente de entrega” (só o que falta entregar). Clique em <b>Obs.</b> para anotar.</p>`;
+    <p class="nota-emitidos">Pedidos emitidos até o fim do período que não foram entregues (inteiros ou em parte) dentro dele — inclusive de meses anteriores. Entram no fechamento do mês em que forem entregues. A coluna <b>Situação</b> mostra como estava no dia em que o relatório foi tirado: “Já entregue em …” (entregue depois do fim do mês) ou “Pendente de entrega” (só o que falta entregar).${CONFERENCIA ? '' : ' A coluna <b>Obs. comissão</b> mostra o que foi anotado na entrega, no campo “Obs. comissão pagto” (ex.: comissão paga antecipada).'}</p>`;
 }
 function tdObs(p){ return `<td class="col-obs" contenteditable="true" data-pedido="${escHtml(p.pedido)}" oninput="salvarObs(this)">${escHtml(lerObs(p.pedido))}</td>`; }
 // v9: colunas ordenaveis (clicar no titulo da coluna) nas listas de nao entregues no mes
-const COLS_BNZ_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['quantidade','Peças','num'],['acessorios','Acess.','num'],['arame_kg','Arame kg','num'],['comissao','Comissão','num'],['situacao','Situação','str'],['data_pedido','Data Pedido','str'],['pedido','Pedido','str'],['obs','Obs.','str']];
-const COLS_CIA_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['valor','Valor','num'],['situacao','Situação','str'],['data_pedido','Data Pedido','str'],['pedido','Pedido','str'],['obs','Obs.','str']];
+const COLS_BNZ_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['quantidade','Peças','num'],['acessorios','Acess.','num'],['arame_kg','Arame kg','num'],['comissao','Comissão','num'],['situacao','Situação','str'],['data_pedido','Data Pedido','str'],['pedido','Pedido','str'],['obs_comissao','Obs. comissão','str']];
+const COLS_CIA_NE = [['cliente','Cliente','str'],['fantasia','Nome Fantasia','str'],['cidade','Cidade','str'],['uf','UF','str'],['valor','Valor','num'],['situacao','Situação','str'],['data_pedido','Data Pedido','str'],['pedido','Pedido','str'],['obs_comissao','Obs. comissão','str']];
 let sortBnzNE = { col:'data_pedido', dir:1 };
 let sortCiaNE = { col:'data_pedido', dir:1 };
-function comObs(lista){ return lista.map(p => Object.assign({}, p, { obs: lerObs(p.pedido) })); }
+function comObs(lista){ return lista; }   // v16: a obs agora vem do sistema (obs_comissao), nao do navegador
 function renderEmitidosForaBnz(){
   const lista = ordenarLista(comObs(listaEmitidosForaBnz()), COLS_BNZ_NE, sortBnzNE);
   const titulo = tituloNaoEntregues('BNZ', lista.length);
@@ -607,7 +609,7 @@ function renderEmitidosForaBnz(){
     <td class="num">${fmtInt(p.arame_kg)}</td>
     ${tdComissao(p)}
     <td>${p.situacao}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
-    ${tdObs(p)}
+    ${tdObsCom(p)}
   </tr>`).join('');
   return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz-emitidos">
       <thead>${theadSort(COLS_BNZ_NE, sortBnzNE)}</thead>
@@ -622,7 +624,7 @@ function renderEmitidosForaCiaplac(){
     ${tdsCliente(p)}
     <td class="num">${fmtReais(p.valor || 0)}</td>
     <td>${p.situacao}</td><td>${fmtData(p.data_pedido)}</td><td>${p.pedido}</td>
-    ${tdObs(p)}
+    ${tdObsCom(p)}
   </tr>`).join('');
   return titulo + `<div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac-emitidos">
       <thead>${theadSort(COLS_CIA_NE, sortCiaNE)}</thead>
@@ -793,7 +795,7 @@ function aplicarDados(data){
   mostraConteudo();
   const fin = data.financeiro || {};
   // v13: modo conferencia vem do SERVIDOR (os campos de comissao ja chegam apagados)
-  if(data.modo_conferencia && !CONFERENCIA){ CONFERENCIA = true; [COLS_BNZ, COLS_BNZ_NE].forEach(semColComissao); if(sortBnz.col==='comissao') sortBnz = { col:'data_entrega', dir:-1 }; if(sortBnzNE.col==='comissao') sortBnzNE = { col:'data_pedido', dir:1 }; }
+  if(data.modo_conferencia && !CONFERENCIA){ CONFERENCIA = true; [COLS_BNZ, COLS_BNZ_NE, COLS_CIAPLAC, COLS_CIA_NE].forEach(semColComissao); if(sortBnz.col==='comissao') sortBnz = { col:'data_entrega', dir:-1 }; if(sortBnzNE.col==='comissao') sortBnzNE = { col:'data_pedido', dir:1 }; }
   document.body.classList.toggle('modo-conferencia', CONFERENCIA);
   $("#selo-conferencia").hidden = !CONFERENCIA;
   if(CONFERENCIA) $("#titulo-sub").textContent = '— Conferência de Entregas';
