@@ -47,7 +47,8 @@
 
   // ---------- a "foto" da tela ----------
   function tirarComissao(raiz){
-    raiz.querySelectorAll('.fin-card.comissao,.nota-preco,.btn-imprimir-lista').forEach(e => e.remove());
+    // .so-com-comissao = qualquer texto que a pagina marcou como "so aparece com comissao"
+    raiz.querySelectorAll('.fin-card.comissao,.nota-preco,.btn-imprimir-lista,.so-com-comissao').forEach(e => e.remove());
     raiz.querySelectorAll('table').forEach(tb => {
       const cab = tb.querySelector('thead tr') || tb.querySelector('tr');
       if(!cab) return;
@@ -99,7 +100,8 @@
     if(!comComissao){
       tirarComissao(html);
       const texto = (html.querySelector('body') || html).textContent.replace(/sem valores de comiss[ãa]o/ig, '');
-      if(/comiss/i.test(texto)) throw new Error('A tela ainda mostra comissão; o link não foi criado. Fale com o suporte.');
+      const sobra = texto.match(/.{0,40}comiss.{0,30}/i);
+      if(sobra) throw new Error('A tela ainda mostra comissão; o link não foi criado. Fale com o suporte. (trecho: "' + sobra[0].replace(/\s+/g,' ').trim() + '")');
     }
     const head = html.querySelector('head');
     const base = document.createElement('base'); base.setAttribute('href', location.href.split('#')[0]);
