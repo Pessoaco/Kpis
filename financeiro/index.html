@@ -371,7 +371,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v19 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v20 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -614,7 +614,7 @@ function resumoEmitidosForaCiaplac(){
 }
 function tituloNaoEntregues(emp, n){
   return `<p class="tabela-titulo">${emp} · Pedidos não entregues dentro do mês ${labelPeriodoAtual()} (${n} pedidos)</p>
-    <p class="nota-emitidos">Pedidos emitidos até o fim do período que não foram entregues (inteiros ou em parte) dentro dele — inclusive de meses anteriores. Entram no fechamento do mês em que forem entregues. A coluna <b>Situação</b> mostra como estava no dia em que o relatório foi tirado: “Já entregue em …” (entregue depois do fim do mês) ou “Pendente de entrega” (só o que falta entregar).${CONFERENCIA ? '' : ' A coluna <b>Obs. comissão</b> mostra o que foi anotado na entrega, no campo “Obs. comissão pagto” (ex.: comissão paga antecipada).'}</p>`;
+    <p class="nota-emitidos">Pedidos emitidos até o fim do período que não foram entregues (inteiros ou em parte) dentro dele — inclusive de meses anteriores. Entram no fechamento do mês em que forem entregues. A coluna <b>Situação</b> mostra como estava no dia em que o relatório foi tirado: “Já entregue em …” (entregue depois do fim do mês) ou “Pendente de entrega” (só o que falta entregar).${CONFERENCIA ? '' : ' <span class="so-com-comissao">A coluna <b>Obs. comissão</b> mostra o que foi anotado na entrega, no campo “Obs. comissão pagto” (ex.: comissão paga antecipada).</span>'}</p>`;
 }
 function tdObs(p){ return `<td class="col-obs" contenteditable="true" data-pedido="${escHtml(p.pedido)}" oninput="salvarObs(this)">${escHtml(lerObs(p.pedido))}</td>`; }
 // v9: colunas ordenaveis (clicar no titulo da coluna) nas listas de nao entregues no mes
