@@ -46,7 +46,7 @@
   .btn-imprimir-icone{font-size:1.05rem;line-height:1;padding:5px 9px;border:1px solid var(--hair);border-radius:7px;background:var(--surface);cursor:pointer}
   .btn-imprimir-icone:hover{background:var(--ground)}
 
-  .controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:18px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:6px}
   .seg{display:inline-flex;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--surface)}
   .seg button{font:inherit;font-family:"Archivo",sans-serif;font-weight:600;font-size:.76rem;padding:6px 13px;border:0;border-left:1px solid var(--hair);background:transparent;color:var(--ink-soft);cursor:pointer}
   .seg button:first-child{border-left:0}
@@ -55,10 +55,10 @@
   .seg.empresa button[data-emp=""].on{background:var(--series-previsto)}
   .seg.empresa button[data-emp="CIAPLAC"].on{background:var(--ciaplac-edge)}
   .seg.empresa button[data-emp="BNZ METAIS"].on{background:var(--bnz-edge)}
-  .statusbar{font-size:.72rem;color:var(--ink-faint);margin-left:auto}
+  .statusbar{display:none}   /* v18: a contagem "N pedidos CIAPLAC + N BNZ" saiu (mostrava a outra representada); "atualizado as..." fica no rodape */
 
   .cards{display:flex;flex-direction:column;gap:14px;margin-bottom:8px}
-  #sec-bnz{margin-top:32px}
+  #sec-bnz{margin-top:8px}   /* v18: menos espaco entre a linha dos meses e os cards (tambem na tela) */
   .fin-card{border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)}
   .fin-card.bnz{background:var(--bnz-bg);border:1px solid var(--bnz-edge)}
   .fin-card.ciaplac{background:var(--ciaplac-bg);border:1px solid var(--ciaplac-edge)}
@@ -70,6 +70,7 @@
   .fin-card.ciaplac .v{color:var(--ciaplac-ink)}
   .fin-card .note{font-size:.74rem;color:var(--ink-soft);margin-top:4px}
   .fin-card .k.chart-k{margin-bottom:8px}
+  .fin-card .k .chart-sub{font-family:"IBM Plex Sans",sans-serif;font-weight:400;font-size:.72rem;text-transform:none;letter-spacing:0;color:var(--ink-soft)}
   .fin-card.kpi-num{max-width:320px}
   /* BNZ: 4 numeros lado a lado (pecas, acessorios, arame, comissao) */
   /* pecas e comissao em destaque; acessorios e arame discretos (sem cor, numero menor) */
@@ -320,7 +321,7 @@
         </div>
       </div>
       <div class="fin-card bnz">
-        <div class="k chart-k">BNZ · Evolução das peças entregues (mês a mês)</div>
+        <div class="k chart-k">BNZ · Quantidade de peças entregues, mês a mês <span class="chart-sub">— contagem de peças drywall (pç), não é valor em R$</span></div>
         <div id="chart-bnz"><div class="empty-msg">carregando…</div></div>
       </div>
     </div>
@@ -345,7 +346,7 @@
         <span class="link-abrir">↗ abrir lista</span>
       </div>
       <div class="fin-card ciaplac">
-        <div class="k chart-k">CIAPLAC · Evolução do faturamento entregue (mês a mês)</div>
+        <div class="k chart-k">CIAPLAC · Faturamento entregue, mês a mês <span class="chart-sub">— valor em R$, sem frete</span></div>
         <div id="chart-ciaplac"><div class="empty-msg">carregando…</div></div>
       </div>
     </div>
@@ -357,7 +358,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v17 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v18 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -452,7 +453,7 @@ function renderEvolucao(pontosRaw, corVar, fmt){
   const pontos = pontosRaw.map(p => ({ mes: mesLabel(p.mes), valor: p.valor }));
   const max = Math.max(...pontos.map(p=>p.valor), 1);
   const W = 560, H = 170;
-  const padL = 8, padR = 8, padT = 22, padB = 22;
+  const padL = 56, padR = 56, padT = 22, padB = 22;   // v18: margem dos lados para o numero do 1o e do ultimo mes nao ficar cortado
   const plotW = W-padL-padR, plotH = H-padT-padB;
   const xFor = i => padL + (pontos.length===1?plotW/2:(i/(pontos.length-1))*plotW);
   const yFor = v => padT + plotH - (v/max)*plotH;
@@ -702,7 +703,7 @@ function renderFinanceiro(){
     $("#v-bnz-arame").textContent = fmtInt(kg);
     $("#v-bnz-comissao").textContent = CONFERENCIA ? "—" : fmtReais(comissao);
     if(!CONFERENCIA) $("#v-bnz-comissao-calc").textContent = fmtReais(pecas*0.20) + ' peças + ' + fmtReais(acess*0.01) + ' acessórios + ' + fmtReais(kg*0.20) + ' arame';
-    $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR'));
+    $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR') + ' pç');   // v18: numero inteiro + "pç"
     $("#lista-bnz").innerHTML = renderListaBnz(lista);
     $("#regiao-bnz").innerHTML = renderPorRegiao(lista, true);
     $("#lista-bnz-emitidos").innerHTML = renderEmitidosForaBnz();
