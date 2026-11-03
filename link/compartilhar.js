@@ -1,4 +1,5 @@
-/* IALINK · Compartilhar link — v1 · por @pessoaco
+/* IALINK · Compartilhar link — v2 · por @pessoaco
+   v2: no link so fica o botao da representada escolhida (sem o nome das outras fabricas)
    Usado por TODOS os painéis (Copiloto de Vendas, Prospects, Financeiro, Rota, Prazo).
    Gera um link que abre SEM login, com a "foto" da tela naquele momento:
    - só o que está visível (o que está escondido, outras representadas/períodos, nem sai do aparelho)
@@ -75,6 +76,8 @@
     });
     marcar.forEach(i => { if(copia[i]) copia[i].setAttribute('data-ial-fora','1'); });
     html.querySelectorAll('[data-ial-fora]').forEach(e => e.remove());
+    // v2: so fica o botao da representada que estava na tela (o link nao mostra nem o nome das outras fabricas)
+    html.querySelectorAll('.seg button[data-emp]:not(.on)').forEach(e => e.remove());
     // nada de codigo, botoes de acao, login, "sair", voltar
     html.querySelectorAll('script,noscript,iframe,object,embed,template,.no-print,.so-tela,.nav-voltar,[data-nao-compartilhar],#login,#tela-carregando,#btn-sair,#btn-logout,#btn-refresh,#btn-imprimir,#btn-compartilhar').forEach(e => e.remove());
     // anotacoes internas da pagina (comentarios) nao vao junto
@@ -177,7 +180,7 @@
     if(!window.CompressionStream){ alert('Este navegador é antigo demais para compartilhar link. Use o Chrome atualizado.'); return; }
     iniciar(op, lerCreds());
   };
-  window.IALinkCompartilhar.versao = 'v1';
+  window.IALinkCompartilhar.versao = 'v2';
   window.IALinkCompartilhar._fotoTeste = c => compacta(foto(!!c));   // so para teste: nao envia nada
 
 })();
