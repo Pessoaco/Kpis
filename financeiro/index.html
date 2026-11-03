@@ -109,9 +109,12 @@
   #lista-bnz-emitidos,#lista-ciaplac-emitidos{margin-top:26px}
   .fin-card.secundario.card-emitidos .v{font-size:1.25rem;font-weight:500;color:var(--ink-soft)}
   .nota-emitidos{margin:-4px 0 8px;font-size:.72rem;color:var(--ink-soft)}
-  table.tabela-fin td.col-obs{min-width:180px;white-space:normal;background:var(--ground);outline:none;color:var(--ink)}
-  table.tabela-fin td.col-obs:focus{background:var(--surface);box-shadow:inset 0 0 0 2px var(--series-previsto)}
-  table.tabela-fin td.col-obs:empty::before{content:"anotar…";color:var(--ink-faint)}
+  /* v16/v17: Obs. comissao vem da entrega no sistema (so leitura) */
+  table.tabela-fin td.col-obs{min-width:160px;white-space:normal;color:var(--ink)}
+  /* v17: grafico sem dados (so 1 mes escolhido) vira um card baixinho de 2 linhas */
+  .fin-card:has(> div > .empty-msg){padding:8px 14px}
+  .fin-card:has(> div > .empty-msg) .k.chart-k{margin-bottom:0}
+  .fin-card:has(> div > .empty-msg) .empty-msg{padding:2px 0 0}
 
   .chart-wrap{overflow-x:auto}
   svg.chart{display:block;max-width:640px}
@@ -171,7 +174,15 @@
     .chart-wrap,.tabela-wrap{overflow-x:hidden}
     svg.chart{max-width:100%}
     table.tabela-fin{table-layout:fixed;width:100%}
-    table.tabela-fin th,table.tabela-fin td{padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    /* v17: linhas um pouco mais altas na impressao (fica mais nitido) */
+    table.tabela-fin th,table.tabela-fin td{padding:4px 4px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    table.tabela-fin td.col-obs{white-space:normal;min-width:0;background:none}
+    /* v17: sem "Vendedor: ..." no papel (o nome vem do login; para a fabrica nao deve sair) */
+    .vendedor-linha{display:none!important}
+    /* v17: menos espaco em branco entre a linha dos meses e os cards */
+    #sec-bnz,#sec-ciaplac{margin-top:6px}
+    .controls{margin-bottom:4px}
+    .cards{gap:8px}
     table.tabela-fin th:nth-child(1){width:20%}
     table.tabela-fin th:nth-child(2){width:14%}
     table.tabela-fin th:nth-child(3){width:12%}
@@ -180,11 +191,15 @@
     table.tabela-fin th:nth-child(6){width:11%}
     table.tabela-fin th:nth-child(7){width:11%}
     table.tabela-fin th:nth-child(8){width:10%}
-    /* tabela BNZ tem 11 colunas (pecas, acessorios, arame, comissao) */
-    #tabela-bnz th:nth-child(1){width:16%} #tabela-bnz th:nth-child(2){width:11%} #tabela-bnz th:nth-child(3){width:10%}
-    #tabela-bnz th:nth-child(4){width:4%} #tabela-bnz th:nth-child(5){width:7%} #tabela-bnz th:nth-child(6){width:6%}
-    #tabela-bnz th:nth-child(7){width:6%} #tabela-bnz th:nth-child(8){width:8%} #tabela-bnz th:nth-child(9){width:9%}
-    #tabela-bnz th:nth-child(10){width:9%} #tabela-bnz th:nth-child(11){width:14%}
+    /* v17: tabela BNZ tem 12 colunas (... Pedido, Obs. comissao): UF e numeros enxutos para caber a Obs. */
+    #tabela-bnz th:nth-child(1){width:15%} #tabela-bnz th:nth-child(2){width:10%} #tabela-bnz th:nth-child(3){width:9%}
+    #tabela-bnz th:nth-child(4){width:3%} #tabela-bnz th:nth-child(5){width:6%} #tabela-bnz th:nth-child(6){width:5%}
+    #tabela-bnz th:nth-child(7){width:5%} #tabela-bnz th:nth-child(8){width:7%} #tabela-bnz th:nth-child(9){width:7%}
+    #tabela-bnz th:nth-child(10){width:7%} #tabela-bnz th:nth-child(11){width:9%} #tabela-bnz th:nth-child(12){width:17%}
+    /* v17: CIAPLAC entregues tem 9 colunas (... Pedido, Obs. comissao) */
+    #tabela-ciaplac th:nth-child(1){width:20%} #tabela-ciaplac th:nth-child(2){width:13%} #tabela-ciaplac th:nth-child(3){width:11%}
+    #tabela-ciaplac th:nth-child(4){width:3%} #tabela-ciaplac th:nth-child(5){width:10%} #tabela-ciaplac th:nth-child(6){width:8%}
+    #tabela-ciaplac th:nth-child(7){width:8%} #tabela-ciaplac th:nth-child(8){width:9%} #tabela-ciaplac th:nth-child(9){width:18%}
     .kpi-row{grid-template-columns:1.4fr 1fr 1fr 1.4fr 1fr;gap:8px}
     .kpi-row .fin-card{padding:10px 12px}
     .kpi-row .fin-card .v{font-size:1.5rem}
@@ -203,19 +218,13 @@
     /* tabela "emitidos e nao entregues": 12 colunas, Obs. pode quebrar linha */
     #tabela-bnz-emitidos th:nth-child(1){width:15%} #tabela-bnz-emitidos th:nth-child(2){width:10%} #tabela-bnz-emitidos th:nth-child(3){width:8%}
     #tabela-bnz-emitidos th:nth-child(4){width:3%} #tabela-bnz-emitidos th:nth-child(5){width:6%} #tabela-bnz-emitidos th:nth-child(6){width:5%}
-    #tabela-bnz-emitidos th:nth-child(7){width:5%} #tabela-bnz-emitidos th:nth-child(8){width:8%} #tabela-bnz-emitidos th:nth-child(9){width:12%}
-    #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:7%} #tabela-bnz-emitidos th:nth-child(12){width:14%}
-    #tabela-bnz-emitidos td.col-obs,#tabela-ciaplac-emitidos td.col-obs{white-space:normal;background:none}
+    #tabela-bnz-emitidos th:nth-child(7){width:5%} #tabela-bnz-emitidos th:nth-child(8){width:7%} #tabela-bnz-emitidos th:nth-child(9){width:11%}
+    #tabela-bnz-emitidos th:nth-child(10){width:7%} #tabela-bnz-emitidos th:nth-child(11){width:8%} #tabela-bnz-emitidos th:nth-child(12){width:18%}
     #tabela-ciaplac-emitidos th:nth-child(1){width:20%} #tabela-ciaplac-emitidos th:nth-child(2){width:13%} #tabela-ciaplac-emitidos th:nth-child(3){width:11%}
-    #tabela-ciaplac-emitidos th:nth-child(4){width:4%} #tabela-ciaplac-emitidos th:nth-child(5){width:11%} #tabela-ciaplac-emitidos th:nth-child(6){width:13%}
-    #tabela-ciaplac-emitidos th:nth-child(7){width:8%} #tabela-ciaplac-emitidos th:nth-child(8){width:8%} #tabela-ciaplac-emitidos th:nth-child(9){width:12%}
-    #tabela-bnz-emitidos td.col-obs:empty::before{content:""}
+    #tabela-ciaplac-emitidos th:nth-child(4){width:3%} #tabela-ciaplac-emitidos th:nth-child(5){width:10%} #tabela-ciaplac-emitidos th:nth-child(6){width:12%}
+    #tabela-ciaplac-emitidos th:nth-child(7){width:8%} #tabela-ciaplac-emitidos th:nth-child(8){width:8%} #tabela-ciaplac-emitidos th:nth-child(9){width:15%}
     .nota-emitidos b{font-weight:400}
-    body.print-lista #tabela-bnz th:nth-child(1){width:22%} body.print-lista #tabela-bnz th:nth-child(2){width:15%}
-    body.print-lista #tabela-bnz th:nth-child(3){width:12%} body.print-lista #tabela-bnz th:nth-child(4){width:4%}
-    body.print-lista #tabela-bnz th:nth-child(5){width:7%} body.print-lista #tabela-bnz th:nth-child(6){width:6%}
-    body.print-lista #tabela-bnz th:nth-child(7){width:6%} body.print-lista #tabela-bnz th:nth-child(9){width:9%}
-    body.print-lista #tabela-bnz th:nth-child(10){width:9%} body.print-lista #tabela-bnz th:nth-child(11){width:10%}
+    /* "Imprimir lista (sem comissao)": a coluna 8 (Comissao) some e as outras se espalham (mesmas larguras acima) */
   }
 </style>
 <style id="print-page-style"></style>
@@ -242,7 +251,7 @@
     <div>
       <h1>Indicadores <span id="titulo-sub">— Financeiro · Previsão do Representante/Vendedor</span></h1>
       <div class="selo-conferencia" id="selo-conferencia" hidden>Conferência de entregas — sem valores de comissão</div>
-      <div class="vendedor-linha" id="vendedor-linha" hidden>Vendedor: <b id="vendedor-nome"></b></div>
+      <div class="vendedor-linha" id="vendedor-linha" data-nao-compartilhar hidden>Vendedor: <b id="vendedor-nome"></b></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button id="btn-imprimir" class="btn-imprimir-icone" onclick="document.body.classList.remove('print-lista');window.print()" title="Imprimir / Salvar PDF">🖨️</button>
@@ -304,7 +313,7 @@
         </div>
         <!-- v2: 5o card, igual ao "Pedidos a entregar" do Copiloto -->
         <div class="fin-card secundario card-emitidos" onclick="document.getElementById('lista-bnz-emitidos').scrollIntoView({behavior:'smooth'})" style="cursor:pointer">
-          <div class="k">Não entregues no mês</div>
+          <div class="k">Pedidos não entregues no mês</div>
           <div class="v" id="v-bnz-emitidos-qtd">—</div>
           <div class="note" id="v-bnz-emitidos-resumo">—</div>
           <span class="link-abrir">↗ abrir lista</span>
@@ -330,7 +339,7 @@
       </div>
       <!-- v8: card-atalho dos nao entregues no mes (CIAPLAC) -->
       <div class="fin-card secundario card-emitidos" style="max-width:320px;cursor:pointer" onclick="document.getElementById('lista-ciaplac-emitidos').scrollIntoView({behavior:'smooth'})">
-        <div class="k">Não entregues no mês</div>
+        <div class="k">Pedidos não entregues no mês</div>
         <div class="v" id="v-ciaplac-emitidos-qtd">—</div>
         <div class="note" id="v-ciaplac-emitidos-resumo">—</div>
         <span class="link-abrir">↗ abrir lista</span>
@@ -348,7 +357,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v16 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v17 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
