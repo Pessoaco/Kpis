@@ -105,6 +105,12 @@
   .link-abrir:hover{text-decoration:underline}
   /* v3: tabela de faturamento por regiao (estreita, total em negrito) */
   .tabela-regiao{max-width:760px}
+  /* v21: clicar na regiao filtra a lista de clientes */
+  table.tabela-fin tr.linha-regiao{cursor:pointer}
+  table.tabela-fin tr.linha-regiao.sel td{background:var(--ground);font-weight:700}
+  .dica-regiao{font-family:"IBM Plex Sans",sans-serif;font-weight:400;font-size:.72rem;color:var(--ink-faint)}
+  .chip-regiao{margin-left:8px;padding:2px 8px;border-radius:999px;background:var(--ground);border:1px solid var(--hair);font-size:.74rem;font-weight:600;white-space:nowrap}
+  .chip-regiao button{margin-left:6px;border:0;background:none;font:inherit;color:var(--series-previsto);cursor:pointer;padding:0}
   table.tabela-fin tr.linha-total td{font-weight:700;border-top:2px solid var(--hair)}
   /* v35: card "emitidos no periodo e nao entregues no periodo" */
   #lista-bnz-emitidos,#lista-ciaplac-emitidos{margin-top:26px}
@@ -371,7 +377,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v20 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v21 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -540,7 +546,7 @@ function renderListaCiaplac(pedidos){
     <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td><td>${fmtData(p.data_entrega)}</td>
     <td class="num">${fmtReais(p.valor)}</td>${tdObsCom(p)}
   </tr>`).join('');
-  return `<p class="tabela-titulo">CIAPLAC · Lista completa (${pedidos.length} pedidos)</p>
+  return `<p class="tabela-titulo">CIAPLAC · Lista completa (${pedidos.length} pedidos)${chipRegiao('CIAPLAC')}</p>
     <div class="tabela-wrap"><table class="tabela-fin" id="tabela-ciaplac">
       <thead>${theadSort(COLS_CIAPLAC, sortCiaplac)}</thead>
       <tbody>${linhas}</tbody>
@@ -558,7 +564,7 @@ function renderListaBnz(pedidos){
     <td>${fmtData(p.data_entrega)}</td>
     ${tdComissao(p)}${tdObsCom(p)}
   </tr>`).join('');
-  return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)
+  return `<p class="tabela-titulo">BNZ · Lista completa (${pedidos.length} pedidos)${chipRegiao('BNZ')}
       ${CONFERENCIA ? '' : '<button type="button" class="btn-imprimir-lista" onclick="imprimirListaSemComissao()" title="Imprime só a lista de pedidos, sem valores de comissão">🖨️ Imprimir lista (sem comissão)</button>'}</p>
     <div class="tabela-wrap"><table class="tabela-fin" id="tabela-bnz">
       <thead>${theadSort(COLS_BNZ, sortBnz)}</thead>
@@ -658,6 +664,17 @@ function renderEmitidosForaCiaplac(){
     </table></div>`;
 }
 
+// v21: clicar numa regiao da tabela mostra na lista completa so os clientes dela (de novo na mesma regiao, ou "limpar", volta tudo).
+let regiaoSel = { BNZ: '', CIAPLAC: '' };
+function filtraRegiao(lista, emp){
+  if(!regiaoSel[emp]) return lista;
+  const f = lista.filter(p => (p.regiao || 'Sem região') === regiaoSel[emp]);
+  if(!f.length){ regiaoSel[emp] = ''; return lista; }   // trocou o periodo e a regiao ficou sem pedidos
+  return f;
+}
+function chipRegiao(emp){ return regiaoSel[emp] ? `<span class="chip-regiao">Região: ${escHtml(regiaoSel[emp])}<button type="button" class="so-tela" onclick="limpaRegiao('${emp}')">✕ limpar</button></span>` : ''; }
+function limpaRegiao(emp){ regiaoSel[emp] = ''; renderFinanceiro(); }
+
 // v3: faturamento entregue por REGIAO (regiao do cadastro do cliente). Conta pedidos pelo numero do pedido
 // (entrega parcial "S0xxxx (1/2)" + "(2/2)" = 1 pedido). Sem dado de regiao (servidor antigo) a tabela nao aparece.
 function renderPorRegiao(lista, ehBnz){
@@ -674,7 +691,8 @@ function renderPorRegiao(lista, ehBnz){
   const tot = { pecas: 0, acess: 0, kg: 0, valor: 0, comissao: 0 };
   let totPedidos = 0;
   const linha = (nome, x, n, total) => {
-    const cls = total ? ' class="linha-total"' : '';
+    const empR = ehBnz ? 'BNZ' : 'CIAPLAC';
+    const cls = total ? ' class="linha-total"' : ` class="linha-regiao${regiaoSel[empR] === nome ? ' sel' : ''}" data-regiao="${escHtml(nome)}" title="Clique para ver os clientes desta região na lista"`;
     return ehBnz
       ? `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtInt(x.pecas)}</td><td class="num">${fmtInt(x.acess)}</td><td class="num">${fmtInt(x.kg)}</td><td class="num">${fmtReais(x.valor)}</td>${CONFERENCIA ? '' : '<td class="num">' + fmtReais(x.comissao) + '</td>'}</tr>`
       : `<tr${cls}><td>${nome}</td><td class="num">${n}</td><td class="num">${fmtReais(x.valor)}</td></tr>`;
@@ -688,7 +706,7 @@ function renderPorRegiao(lista, ehBnz){
     ? '<tr><th>Região</th><th class="num">Pedidos</th><th class="num">Peças</th><th class="num">Acess.</th><th class="num">Arame kg</th><th class="num">Faturamento</th>' + (CONFERENCIA ? '' : '<th class="num">Comissão</th>') + '</tr>'
     : '<tr><th>Região</th><th class="num">Pedidos</th><th class="num">Faturamento</th></tr>';
   const emp = ehBnz ? 'BNZ' : 'CIAPLAC';
-  return `<p class="tabela-titulo">${emp} · Faturamento entregue por região ${labelPeriodoAtual()}</p>
+  return `<p class="tabela-titulo">${emp} · Faturamento entregue por região ${labelPeriodoAtual()} <span class="so-tela dica-regiao">— clique numa região para ver os clientes na lista</span></p>
     <div class="tabela-wrap tabela-regiao"><table class="tabela-fin" id="tabela-regiao-${emp.toLowerCase()}"><thead>${cab}</thead><tbody>${corpo}</tbody></table></div>`;
 }
 
@@ -704,7 +722,7 @@ function renderFinanceiro(){
     $("#label-ciaplac-total").textContent = 'CIAPLAC · Faturamento entregue ' + labelPeriodoAtual();
     $("#v-ciaplac").textContent = fmtReais(total);
     $("#chart-ciaplac").innerHTML = renderEvolucao(agruparPorMes(lista,'valor'), '--ciaplac-edge', v => fmtMoeda(v));
-    $("#lista-ciaplac").innerHTML = renderListaCiaplac(lista);
+    $("#lista-ciaplac").innerHTML = renderListaCiaplac(filtraRegiao(lista, 'CIAPLAC'));
     $("#lista-ciaplac-emitidos").innerHTML = renderEmitidosForaCiaplac();
     $("#v-ciaplac-emitidos-resumo").textContent = resumoEmitidosForaCiaplac();
     $("#regiao-ciaplac").innerHTML = renderPorRegiao(lista, false);
@@ -720,7 +738,7 @@ function renderFinanceiro(){
     $("#v-bnz-comissao").textContent = CONFERENCIA ? "—" : fmtReais(comissao);
     if(!CONFERENCIA) $("#v-bnz-comissao-calc").textContent = fmtReais(pecas*0.20) + ' peças + ' + fmtReais(acess*0.01) + ' acessórios + ' + fmtReais(kg*0.20) + ' arame';
     $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR') + ' pç');   // v18: numero inteiro + "pç"
-    $("#lista-bnz").innerHTML = renderListaBnz(lista);
+    $("#lista-bnz").innerHTML = renderListaBnz(filtraRegiao(lista, 'BNZ'));
     $("#regiao-bnz").innerHTML = renderPorRegiao(lista, true);
     $("#lista-bnz-emitidos").innerHTML = renderEmitidosForaBnz();
     $("#v-bnz-emitidos-resumo").textContent = resumoEmitidosForaBnz();
@@ -749,6 +767,14 @@ window.addEventListener('beforeprint', syncPrintPageStyle);
     .map((m,i) => `<button data-mes="${i}">${m}</button>`).join('');
 })();
 
+// v21: clique numa linha da tabela por regiao
+['bnz','ciaplac'].forEach(s => document.getElementById('regiao-' + s).addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-regiao]'); if(!tr) return;
+  const emp = s === 'bnz' ? 'BNZ' : 'CIAPLAC', r = tr.dataset.regiao;
+  regiaoSel[emp] = regiaoSel[emp] === r ? '' : r;
+  renderFinanceiro();
+  document.getElementById('lista-' + s).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}));
 $('#seg-empresa').addEventListener('click', e => {
   const b = e.target.closest('button[data-emp]'); if(!b) return;
   empresa = b.dataset.emp;
