@@ -86,6 +86,9 @@
   .kpi-row .fin-card.secundario .v{font-size:1.25rem;font-weight:500;color:var(--ink-soft)}
   .fin-card.secundario .note{font-size:.68rem;color:var(--ink-faint)}
   @media (max-width:760px){ .kpi-row{grid-template-columns:1fr 1fr} }
+  /* v25: CIAPLAC tem 2 cards na linha; no celular estreito, um embaixo do outro */
+  .kpi-row.kpi-row-cia{grid-template-columns:1.6fr 1fr}
+  @media (max-width:520px){ .kpi-row.kpi-row-cia{grid-template-columns:1fr} }
 
   /* nomes longos: largura travada + reticencias, pra lista caber sem barra de rolagem */
   table.tabela-fin td.col-cli,table.tabela-fin td.col-fant,table.tabela-fin td.col-cid{overflow:hidden;text-overflow:ellipsis}
@@ -222,6 +225,7 @@
     #tabela-ciaplac th:nth-child(4){width:3%} #tabela-ciaplac th:nth-child(5){width:9%} #tabela-ciaplac th:nth-child(6){width:8%}
     #tabela-ciaplac th:nth-child(7){width:8%} #tabela-ciaplac th:nth-child(8){width:10%} #tabela-ciaplac th:nth-child(9){width:18%}
     .kpi-row{grid-template-columns:1.4fr 1fr 1fr 1.4fr 1fr;gap:8px}
+    .kpi-row.kpi-row-cia{grid-template-columns:1.6fr 1fr}
     .kpi-row .fin-card{padding:10px 12px}
     .kpi-row .fin-card .v{font-size:1.5rem}
     .kpi-row .fin-card.secundario .v{font-size:1rem}
@@ -369,17 +373,20 @@
 
   <div id="sec-ciaplac">
     <div class="cards">
+      <!-- v25: faturamento e nao entregues lado a lado (igual a BNZ) -->
+      <div class="kpi-row kpi-row-cia">
       <div class="fin-card ciaplac kpi-num">
         <div class="k" id="label-ciaplac-total">CIAPLAC · Faturamento entregue</div>
         <div class="v" id="v-ciaplac">—</div>
         <div class="note">Soma dos pedidos com entrega efetiva registrada no período selecionado. Não inclui frete.</div>
       </div>
       <!-- v8: card-atalho dos nao entregues no mes (CIAPLAC) -->
-      <div class="fin-card secundario card-emitidos" style="max-width:320px;cursor:pointer" onclick="document.getElementById('lista-ciaplac-emitidos').scrollIntoView({behavior:'smooth'})">
+      <div class="fin-card secundario card-emitidos" style="cursor:pointer" onclick="document.getElementById('lista-ciaplac-emitidos').scrollIntoView({behavior:'smooth'})">
         <div class="k">Pedidos não entregues no mês</div>
         <div class="v" id="v-ciaplac-emitidos-qtd">—</div>
         <div class="note" id="v-ciaplac-emitidos-resumo">—</div>
         <span class="link-abrir">↗ abrir lista</span>
+      </div>
       </div>
       <div class="fin-card ciaplac">
         <div class="k chart-k">CIAPLAC · Faturamento entregue, mês a mês <span class="chart-sub">— valor em R$, sem frete</span></div>
@@ -397,7 +404,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v24 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v25 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
