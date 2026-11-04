@@ -105,6 +105,14 @@
   .link-abrir:hover{text-decoration:underline}
   /* v3: tabela de faturamento por regiao (estreita, total em negrito) */
   .tabela-regiao{max-width:760px}
+  /* v22: quadradinho ao lado do cliente + barra com a soma do que foi marcado (so na tela) */
+  input.marca{margin:0 6px 0 0;vertical-align:-2px;cursor:pointer;accent-color:var(--series-previsto)}
+  .barra-soma{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:40;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;max-width:calc(100vw - 32px);padding:10px 16px;border-radius:10px;background:var(--ink);color:var(--surface);font-size:.84rem;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+  .barra-soma[hidden]{display:none}
+  .barra-soma b{font-family:"IBM Plex Mono",monospace;font-weight:700}
+  .barra-soma button{border:1px solid currentColor;background:none;color:inherit;border-radius:6px;padding:2px 9px;font:inherit;font-size:.76rem;cursor:pointer}
+  /* v23: total por cliente: confere com a folha da fabrica */
+  .tabela-cliente{max-width:1000px}
   /* v21: clicar na regiao filtra a lista de clientes */
   table.tabela-fin tr.linha-regiao{cursor:pointer}
   table.tabela-fin tr.linha-regiao.sel td{background:var(--ground);font-weight:700}
@@ -220,6 +228,14 @@
     .btn-imprimir-lista{display:none!important}
     .so-tela,.link-abrir{display:none!important}
     body.print-lista #regiao-bnz,body.print-lista #regiao-ciaplac{display:none!important}
+    /* v24: total por cliente na folha A4 */
+    .tabela-cliente{max-width:100%}
+    #cliente-ciaplac .tabela-cliente{max-width:72%}
+    body.print-lista #cliente-bnz,body.print-lista #cliente-ciaplac{display:none!important}
+    #tabela-cliente-bnz th:nth-child(1){width:26%} #tabela-cliente-bnz th:nth-child(2){width:15%} #tabela-cliente-bnz th:nth-child(3){width:7%}
+    #tabela-cliente-bnz th:nth-child(4){width:9%} #tabela-cliente-bnz th:nth-child(5){width:8%} #tabela-cliente-bnz th:nth-child(6){width:8%}
+    #tabela-cliente-bnz th:nth-child(7){width:15%} #tabela-cliente-bnz th:nth-child(8){width:12%}
+    #tabela-cliente-ciaplac th:nth-child(1){width:44%} #tabela-cliente-ciaplac th:nth-child(2){width:26%} #tabela-cliente-ciaplac th:nth-child(3){width:10%} #tabela-cliente-ciaplac th:nth-child(4){width:20%}
     /* v19: tabela por regiao compacta (nao espalhada pela folha inteira) */
     .tabela-regiao{max-width:72%}
     #regiao-ciaplac .tabela-regiao{max-width:45%}
@@ -347,6 +363,7 @@
     <div id="lista-bnz"></div>
     <!-- v5: regiao depois da lista de entregues e antes dos emitidos (so pro vendedor) -->
     <div id="regiao-bnz"></div>
+    <div id="cliente-bnz"></div>
     <div id="lista-bnz-emitidos"></div>
   </div>
 
@@ -370,14 +387,17 @@
       </div>
     </div>
     <div id="regiao-ciaplac"></div>
+    <div id="cliente-ciaplac"></div>
     <div id="lista-ciaplac"></div>
     <div id="lista-ciaplac-emitidos"></div>
   </div>
 
+  <!-- v22: soma ao vivo do que foi marcado nas listas -->
+  <div class="barra-soma so-tela" id="barra-soma" hidden></div>
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v21 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v24 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -536,13 +556,42 @@ function imprimirListaSemComissao(){
 
 // nomes longos: largura travada + reticencias (nome inteiro aparece ao passar o mouse)
 function tdTrunc(txt, cls){ const t = String(txt || '').replace(/"/g,'&quot;'); return `<td class="${cls}" title="${t}">${txt || ''}</td>`; }
-function tdsCliente(p){ return tdTrunc(p.cliente,'col-cli') + tdTrunc(p.fantasia,'col-fant') + tdTrunc(p.cidade,'col-cid') + `<td>${p.uf}</td>`; }
+// v22: quadradinho ao lado do nome: marca o pedido e soma na barra de baixo. A marcacao continua ao ordenar ou trocar de filtro.
+const marcados = new Set();
+function tdCliMarca(p, lista){
+  const k = lista + '|' + p.pedido + '|' + (p.data_entrega || '');
+  const nome = escHtml(p.cliente || '');
+  return `<td class="col-cli" title="${nome.replace(/"/g,'&quot;')}"><input type="checkbox" class="marca so-tela" data-k="${escHtml(k)}" data-lista="${lista}" data-q="${p.quantidade||0}" data-a="${p.acessorios||0}" data-kg="${p.arame_kg||0}" data-v="${p.valor||0}" data-c="${p.comissao||0}"${marcados.has(k) ? ' checked' : ''} title="Marcar para somar">${nome}</td>`;
+}
+function tdsCliente(p, lista){ return tdCliMarca(p, lista) + tdTrunc(p.fantasia,'col-fant') + tdTrunc(p.cidade,'col-cid') + `<td>${p.uf}</td>`; }
+function atualizaBarra(){
+  const b = document.getElementById('barra-soma');
+  const vis = Array.from(document.querySelectorAll('input.marca:checked')).filter(i => i.offsetParent !== null);
+  if(!vis.length){ b.hidden = true; b.innerHTML = ''; return; }
+  const soma = (f, ini) => vis.filter(i => i.dataset.lista.startsWith(ini)).reduce((s,i) => s + Number(i.dataset[f] || 0), 0);
+  const qtdB = vis.filter(i => i.dataset.lista.startsWith('bnz')).length, qtdC = vis.length - qtdB;
+  const partes = [`<span>${vis.length} pedido${vis.length === 1 ? '' : 's'} marcado${vis.length === 1 ? '' : 's'}</span>`];
+  if(qtdC) partes.push(`<span>CIAPLAC: <b>${fmtReais(soma('v','cia'))}</b></span>`);
+  if(qtdB){
+    partes.push(`<span>BNZ: <b>${fmtInt(soma('q','bnz'))}</b> peças · <b>${fmtInt(soma('a','bnz'))}</b> acess. · <b>${fmtInt(soma('kg','bnz'))}</b> kg</span>`);
+    if(!CONFERENCIA) partes.push(`<span>Comissão: <b>${fmtReais(soma('c','bnz'))}</b></span>`);
+  }
+  partes.push('<button type="button" onclick="limpaMarcados()">✕ limpar</button>');
+  b.innerHTML = partes.join('');
+  b.hidden = false;
+}
+function limpaMarcados(){ marcados.clear(); document.querySelectorAll('input.marca:checked').forEach(i => { i.checked = false; }); atualizaBarra(); }
+document.addEventListener('change', e => {
+  const i = e.target; if(!i.classList || !i.classList.contains('marca')) return;
+  if(i.checked) marcados.add(i.dataset.k); else marcados.delete(i.dataset.k);
+  atualizaBarra();
+});
 
 function renderListaCiaplac(pedidos){
   if(!pedidos || !pedidos.length) return '<div class="empty-msg">Nenhum pedido entregue no período.</div>';
   const ordenados = ordenarLista(pedidos, COLS_CIAPLAC, sortCiaplac);
   const linhas = ordenados.map(p => `<tr>
-    ${tdsCliente(p)}
+    ${tdsCliente(p, 'cia')}
     <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td><td>${fmtData(p.data_entrega)}</td>
     <td class="num">${fmtReais(p.valor)}</td>${tdObsCom(p)}
   </tr>`).join('');
@@ -556,7 +605,7 @@ function renderListaBnz(pedidos){
   if(!pedidos || !pedidos.length) return '<div class="empty-msg">Nenhum pedido entregue no período.</div>';
   const ordenados = ordenarLista(pedidos, COLS_BNZ, sortBnz);
   const linhas = ordenados.map(p => `<tr>
-    ${tdsCliente(p)}
+    ${tdsCliente(p, 'bnz')}
     <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td>
     <td class="num">${fmtInt(p.quantidade)}</td>
     <td class="num">${fmtInt(p.acessorios)}</td>
@@ -635,7 +684,7 @@ function renderEmitidosForaBnz(){
   const titulo = tituloNaoEntregues('BNZ', lista.length);
   if(!lista.length) return titulo + '<div class="empty-msg">Todos os pedidos foram entregues dentro do mês.</div>';
   const linhas = lista.map(p => `<tr>
-    ${tdsCliente(p)}
+    ${tdsCliente(p, 'bnz-ne')}
     <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td>
     <td class="num">${fmtInt(p.quantidade)}</td>
     <td class="num">${fmtInt(p.acessorios)}</td>
@@ -653,7 +702,7 @@ function renderEmitidosForaCiaplac(){
   const titulo = tituloNaoEntregues('CIAPLAC', lista.length);
   if(!lista.length) return titulo + '<div class="empty-msg">Todos os pedidos foram entregues dentro do mês.</div>';
   const linhas = lista.map(p => `<tr>
-    ${tdsCliente(p)}
+    ${tdsCliente(p, 'cia-ne')}
     <td>${p.pedido}</td><td>${fmtData(p.data_pedido)}</td><td>${p.situacao}</td>
     <td class="num">${fmtReais(p.valor || 0)}</td>
     ${tdObsCom(p)}
@@ -666,13 +715,26 @@ function renderEmitidosForaCiaplac(){
 
 // v21: clicar numa regiao da tabela mostra na lista completa so os clientes dela (de novo na mesma regiao, ou "limpar", volta tudo).
 let regiaoSel = { BNZ: '', CIAPLAC: '' };
+// v23: clicar num cliente da tabela "Total por cliente" mostra na lista so os pedidos dele
+let clienteSel = { BNZ: '', CIAPLAC: '' };
+function filtraCliente(lista, emp){
+  if(!clienteSel[emp]) return lista;
+  const f = lista.filter(p => (p.cliente || '') === clienteSel[emp]);
+  if(!f.length){ clienteSel[emp] = ''; return lista; }
+  return f;
+}
+function limpaCliente(emp){ clienteSel[emp] = ''; renderFinanceiro(); }
 function filtraRegiao(lista, emp){
   if(!regiaoSel[emp]) return lista;
   const f = lista.filter(p => (p.regiao || 'Sem região') === regiaoSel[emp]);
   if(!f.length){ regiaoSel[emp] = ''; return lista; }   // trocou o periodo e a regiao ficou sem pedidos
   return f;
 }
-function chipRegiao(emp){ return regiaoSel[emp] ? `<span class="chip-regiao">Região: ${escHtml(regiaoSel[emp])}<button type="button" class="so-tela" onclick="limpaRegiao('${emp}')">✕ limpar</button></span>` : ''; }
+function chipRegiao(emp){
+  const r = regiaoSel[emp] ? `<span class="chip-regiao">Região: ${escHtml(regiaoSel[emp])}<button type="button" class="so-tela" onclick="limpaRegiao('${emp}')">✕ limpar</button></span>` : '';
+  const c = clienteSel[emp] ? `<span class="chip-regiao">Cliente: ${escHtml(clienteSel[emp])}<button type="button" class="so-tela" onclick="limpaCliente('${emp}')">✕ limpar</button></span>` : '';
+  return r + c;
+}
 function limpaRegiao(emp){ regiaoSel[emp] = ''; renderFinanceiro(); }
 
 // v3: faturamento entregue por REGIAO (regiao do cadastro do cliente). Conta pedidos pelo numero do pedido
@@ -710,6 +772,36 @@ function renderPorRegiao(lista, ehBnz){
     <div class="tabela-wrap tabela-regiao"><table class="tabela-fin" id="tabela-regiao-${emp.toLowerCase()}"><thead>${cab}</thead><tbody>${corpo}</tbody></table></div>`;
 }
 
+// v23: TOTAL POR CLIENTE (mesma conta da tabela por regiao). A fabrica manda o fechamento pelo total de cada cliente: o Daniel
+// compara linha a linha com a folha. Segue o mes e a regiao escolhidos. v24: sai tambem na impressao e no link (diretoria confere por cliente).
+function renderPorCliente(lista, ehBnz){
+  if(!lista.length) return '';
+  const emp = ehBnz ? 'BNZ' : 'CIAPLAC';
+  const g = {};
+  lista.forEach(p => {
+    const c = p.cliente || '(sem nome)';
+    if(!g[c]) g[c] = { fantasia: p.fantasia || '', pedidos: new Set(), pecas: 0, acess: 0, kg: 0, valor: 0, comissao: 0 };
+    g[c].pedidos.add(String(p.pedido || '').replace(/ \(\d+\/\d+\)$/, ''));
+    g[c].pecas += p.quantidade || 0; g[c].acess += p.acessorios || 0; g[c].kg += p.arame_kg || 0;
+    g[c].valor += p.valor || 0; g[c].comissao += p.comissao || 0;
+  });
+  const nomes = Object.keys(g).sort((a,b) => g[b].valor - g[a].valor);
+  const tot = { pecas: 0, acess: 0, kg: 0, valor: 0, comissao: 0 }; let totPed = 0;
+  const nums = x => ehBnz
+    ? `<td class="num">${fmtInt(x.pecas)}</td><td class="num">${fmtInt(x.acess)}</td><td class="num">${fmtInt(x.kg)}</td><td class="num">${fmtReais(x.valor)}</td>${CONFERENCIA ? '' : '<td class="num">' + fmtReais(x.comissao) + '</td>'}`
+    : `<td class="num">${fmtReais(x.valor)}</td>`;
+  const corpo = nomes.map(c => {
+    const x = g[c], n = x.pedidos.size; totPed += n; ['pecas','acess','kg','valor','comissao'].forEach(k => tot[k] += x[k]);
+    const attr = escHtml(c).replace(/"/g, '&quot;');
+    return `<tr class="linha-regiao${clienteSel[emp] === c ? ' sel' : ''}" data-cliente="${attr}" title="Clique para ver os pedidos deste cliente na lista"><td>${escHtml(c)}</td><td>${escHtml(x.fantasia)}</td><td class="num">${n}</td>${nums(x)}</tr>`;
+  }).join('') + `<tr class="linha-total"><td>Total</td><td></td><td class="num">${totPed}</td>${nums(tot)}</tr>`;
+  const cab = '<tr><th>Cliente</th><th>Nome Fantasia</th><th class="num">Pedidos</th>' + (ehBnz
+    ? '<th class="num">Peças</th><th class="num">Acess.</th><th class="num">Arame kg</th><th class="num">Faturamento</th>' + (CONFERENCIA ? '' : '<th class="num">Comissão</th>')
+    : '<th class="num">Faturamento</th>') + '</tr>';
+  return `<p class="tabela-titulo">${emp} · Total por cliente ${labelPeriodoAtual()} <span class="so-tela dica-regiao">— clique no cliente para ver os pedidos na lista</span></p>
+    <div class="tabela-wrap tabela-cliente"><table class="tabela-fin" id="tabela-cliente-${emp.toLowerCase()}"><thead>${cab}</thead><tbody>${corpo}</tbody></table></div>`;
+}
+
 function renderFinanceiro(){
   const showCiaplac = !empresa || empresa === 'CIAPLAC';
   const showBnz = !empresa || empresa === 'BNZ METAIS';
@@ -722,7 +814,9 @@ function renderFinanceiro(){
     $("#label-ciaplac-total").textContent = 'CIAPLAC · Faturamento entregue ' + labelPeriodoAtual();
     $("#v-ciaplac").textContent = fmtReais(total);
     $("#chart-ciaplac").innerHTML = renderEvolucao(agruparPorMes(lista,'valor'), '--ciaplac-edge', v => fmtMoeda(v));
-    $("#lista-ciaplac").innerHTML = renderListaCiaplac(filtraRegiao(lista, 'CIAPLAC'));
+    const listaRegC = filtraRegiao(lista, 'CIAPLAC');
+    $("#lista-ciaplac").innerHTML = renderListaCiaplac(filtraCliente(listaRegC, 'CIAPLAC'));
+    $("#cliente-ciaplac").innerHTML = renderPorCliente(listaRegC, false);
     $("#lista-ciaplac-emitidos").innerHTML = renderEmitidosForaCiaplac();
     $("#v-ciaplac-emitidos-resumo").textContent = resumoEmitidosForaCiaplac();
     $("#regiao-ciaplac").innerHTML = renderPorRegiao(lista, false);
@@ -738,11 +832,14 @@ function renderFinanceiro(){
     $("#v-bnz-comissao").textContent = CONFERENCIA ? "—" : fmtReais(comissao);
     if(!CONFERENCIA) $("#v-bnz-comissao-calc").textContent = fmtReais(pecas*0.20) + ' peças + ' + fmtReais(acess*0.01) + ' acessórios + ' + fmtReais(kg*0.20) + ' arame';
     $("#chart-bnz").innerHTML = renderEvolucao(agruparPorMes(lista,'quantidade'), '--bnz-edge', v => Math.round(v).toLocaleString('pt-BR') + ' pç');   // v18: numero inteiro + "pç"
-    $("#lista-bnz").innerHTML = renderListaBnz(filtraRegiao(lista, 'BNZ'));
+    const listaRegB = filtraRegiao(lista, 'BNZ');
+    $("#lista-bnz").innerHTML = renderListaBnz(filtraCliente(listaRegB, 'BNZ'));
+    $("#cliente-bnz").innerHTML = renderPorCliente(listaRegB, true);
     $("#regiao-bnz").innerHTML = renderPorRegiao(lista, true);
     $("#lista-bnz-emitidos").innerHTML = renderEmitidosForaBnz();
     $("#v-bnz-emitidos-resumo").textContent = resumoEmitidosForaBnz();
   }
+  atualizaBarra();   // v22
   syncPrintPageStyle();
 }
 
@@ -767,11 +864,20 @@ window.addEventListener('beforeprint', syncPrintPageStyle);
     .map((m,i) => `<button data-mes="${i}">${m}</button>`).join('');
 })();
 
+// v23: clique numa linha da tabela por cliente
+['bnz','ciaplac'].forEach(s => document.getElementById('cliente-' + s).addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-cliente]'); if(!tr) return;
+  const emp = s === 'bnz' ? 'BNZ' : 'CIAPLAC', c = tr.dataset.cliente;
+  clienteSel[emp] = clienteSel[emp] === c ? '' : c;
+  renderFinanceiro();
+  document.getElementById('lista-' + s).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}));
 // v21: clique numa linha da tabela por regiao
 ['bnz','ciaplac'].forEach(s => document.getElementById('regiao-' + s).addEventListener('click', e => {
   const tr = e.target.closest('tr[data-regiao]'); if(!tr) return;
   const emp = s === 'bnz' ? 'BNZ' : 'CIAPLAC', r = tr.dataset.regiao;
   regiaoSel[emp] = regiaoSel[emp] === r ? '' : r;
+  clienteSel[emp] = '';   // v23: trocou a regiao, volta a ver todos os clientes dela
   renderFinanceiro();
   document.getElementById('lista-' + s).scrollIntoView({ behavior: 'smooth', block: 'start' });
 }));
