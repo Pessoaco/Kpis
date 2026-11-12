@@ -418,7 +418,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v26 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v27 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -545,8 +545,9 @@ let CONFERENCIA = false;
 function semColComissao(cols){ for(let i = cols.length - 1; i >= 0; i--) if(/comiss/.test(cols[i][0])) cols.splice(i,1); }
 // v16: Obs. comissao = anotacao feita na ENTREGA no sistema (campo 'Obs. comissao pagto'), igual em qualquer aparelho
 // v26: quem tem o Financeiro completo clica na celula e grava a observacao na ENTREGA (campo 'Obs. comissao pagto' do sistema).
-// So linhas com entrega no sistema (pks). Grava pelo fluxo n8n Financeiro_Obs_Comissao (confere login e permissao no servidor).
-const WEBHOOK_OBS = WEBHOOK_URL.replace(/\/[^\/?]*$/, '/financeiro-obs');
+// So linhas com entrega no sistema (pks). v27: grava pelo FLUXO DE ACOES do Copiloto (webhook painel-vendedor-acao, acao=obs_comissao),
+// o mesmo do Feito/Cancelar/Ficha - ele confere login e permissao no servidor. Combinado com a sessao do Copiloto em 12/11/2026.
+const WEBHOOK_ACAO_FIN = WEBHOOK_URL.replace(/\/[^\/?]*$/, '/painel-vendedor-acao');
 function tdObsCom(p){
   if(CONFERENCIA) return '';
   const pks = (p.pks || []).join(',');
@@ -570,7 +571,7 @@ function abreObs(td){
     const b = f.querySelector('#obs-ok'), er = f.querySelector('#obs-erro');
     b.disabled = true; b.textContent = 'Salvando…'; er.hidden = true;
     let r = null;
-    try { r = await (await fetch(WEBHOOK_OBS, { method: 'POST', body: new URLSearchParams({ user: creds.user, pass: creds.pass, pks, texto: inp.value.trim() }) })).json(); }
+    try { const q = new URLSearchParams({ acao: 'obs_comissao', user: creds.user, pass: creds.pass, pks, texto: inp.value.trim(), t: Date.now() }); r = await (await fetch(WEBHOOK_ACAO_FIN + '?' + q.toString(), { cache: 'no-store' })).json(); }
     catch(e){ r = { ok: false, erro: 'Sem resposta do servidor. Verifique a internet.' }; }
     if(!r || !r.ok){ er.textContent = (r && r.erro) || 'Não consegui salvar.'; er.hidden = false; b.disabled = false; b.textContent = 'Salvar'; return; }
     TODOS_BNZ.concat(TODOS_BNZ_PEND, TODOS_CIAPLAC, TODOS_CIAPLAC_PEND).forEach(p => { if((p.pks || []).join(',') === pks) p.obs_comissao = r.texto || ''; });
