@@ -114,6 +114,20 @@
   .barra-soma[hidden]{display:none}
   .barra-soma b{font-family:"IBM Plex Mono",monospace;font-weight:700}
   .barra-soma button{border:1px solid currentColor;background:none;color:inherit;border-radius:6px;padding:2px 9px;font:inherit;font-size:.76rem;cursor:pointer}
+  /* v26: Obs. comissao editavel na tela (grava na entrega, no sistema) */
+  table.tabela-fin td.obs-edit{cursor:pointer}
+  table.tabela-fin td.obs-edit:hover{background:var(--ground)}
+  .obs-lapis{opacity:.45;font-size:.85em;margin-left:4px}
+  .obs-vazia{color:var(--ink-faint);font-style:italic}
+  .obs-fundo{position:fixed;inset:0;z-index:60;background:rgba(20,20,30,.4);display:flex;align-items:center;justify-content:center;padding:16px}
+  .obs-caixa{background:var(--surface);color:var(--ink);border-radius:12px;width:100%;max-width:440px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.25);font-size:.85rem}
+  .obs-caixa h3{margin:0 0 4px;font-size:1rem;font-family:"Archivo",sans-serif}
+  .obs-caixa p{margin:0 0 10px;color:var(--ink-soft);font-size:.78rem}
+  .obs-caixa input{width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--hair);border-radius:8px;font:inherit;background:var(--surface);color:var(--ink)}
+  .obs-caixa .bts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+  .obs-caixa button{border:1px solid var(--hair);background:var(--ground);color:var(--ink);border-radius:8px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+  .obs-caixa button.pri{background:var(--series-previsto);border-color:var(--series-previsto);color:#fff}
+  .obs-caixa .erro{color:#b3261e;font-weight:600;margin-top:8px}
   /* v23: total por cliente: confere com a folha da fabrica */
   .tabela-cliente{max-width:1000px}
   /* v21: clicar na regiao filtra a lista de clientes */
@@ -404,7 +418,7 @@
   <div class="status" id="status">carregando… (pode levar até 30s)</div>
   <button class="sair" id="btn-sair">sair</button>
   <!-- VERSAO DA PAGINA: subir o numero a cada alteracao (conferir no site se o rodape mostra a mesma versao) -->
-  <div class="versao-pagina">Financeiro · versão v25 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
+  <div class="versao-pagina">Financeiro · versão v26 · por <a class="autor" href="https://instagram.com/pessoaco" target="_blank" rel="noopener">@pessoaco</a></div>
 </div>
 
 <script>
@@ -530,7 +544,42 @@ const COLS_BNZ = [
 let CONFERENCIA = false;
 function semColComissao(cols){ for(let i = cols.length - 1; i >= 0; i--) if(/comiss/.test(cols[i][0])) cols.splice(i,1); }
 // v16: Obs. comissao = anotacao feita na ENTREGA no sistema (campo 'Obs. comissao pagto'), igual em qualquer aparelho
-function tdObsCom(p){ return CONFERENCIA ? '' : tdTrunc(escHtml(p.obs_comissao || ''), 'col-obs'); }
+// v26: quem tem o Financeiro completo clica na celula e grava a observacao na ENTREGA (campo 'Obs. comissao pagto' do sistema).
+// So linhas com entrega no sistema (pks). Grava pelo fluxo n8n Financeiro_Obs_Comissao (confere login e permissao no servidor).
+const WEBHOOK_OBS = WEBHOOK_URL.replace(/\/[^\/?]*$/, '/financeiro-obs');
+function tdObsCom(p){
+  if(CONFERENCIA) return '';
+  const pks = (p.pks || []).join(',');
+  const txt = escHtml(p.obs_comissao || '');
+  if(!pks) return tdTrunc(txt, 'col-obs');
+  return `<td class="col-obs obs-edit" data-pks="${pks}" data-ped="${escHtml(p.pedido)}" title="Clique para anotar (fica salvo no sistema)">${txt || '<span class="obs-vazia so-tela">anotar</span>'}<span class="obs-lapis so-tela">✏️</span></td>`;
+}
+function abreObs(td){
+  const pks = td.dataset.pks, ped = td.dataset.ped;
+  const atual = (TODOS_BNZ.concat(TODOS_BNZ_PEND, TODOS_CIAPLAC, TODOS_CIAPLAC_PEND).find(p => (p.pks || []).join(',') === pks) || {}).obs_comissao || '';
+  const f = document.createElement('div'); f.className = 'obs-fundo';
+  f.innerHTML = '<div class="obs-caixa"><h3>Obs. comissão · ' + escHtml(ped) + '</h3><p>Fica salvo no sistema, na entrega deste pedido. Ex.: comissão já recebida no fechamento de out/26.</p>' +
+    '<input id="obs-txt" maxlength="200" autocomplete="off"><div class="erro" id="obs-erro" hidden></div>' +
+    '<div class="bts"><button type="button" id="obs-x">Cancelar</button><button type="button" class="pri" id="obs-ok">Salvar</button></div></div>';
+  document.body.appendChild(f);
+  const inp = f.querySelector('#obs-txt'); inp.value = atual; inp.focus();
+  const fecha = () => f.remove();
+  f.querySelector('#obs-x').onclick = fecha;
+  f.addEventListener('click', e => { if(e.target === f) fecha(); });
+  const salva = async () => {
+    const b = f.querySelector('#obs-ok'), er = f.querySelector('#obs-erro');
+    b.disabled = true; b.textContent = 'Salvando…'; er.hidden = true;
+    let r = null;
+    try { r = await (await fetch(WEBHOOK_OBS, { method: 'POST', body: new URLSearchParams({ user: creds.user, pass: creds.pass, pks, texto: inp.value.trim() }) })).json(); }
+    catch(e){ r = { ok: false, erro: 'Sem resposta do servidor. Verifique a internet.' }; }
+    if(!r || !r.ok){ er.textContent = (r && r.erro) || 'Não consegui salvar.'; er.hidden = false; b.disabled = false; b.textContent = 'Salvar'; return; }
+    TODOS_BNZ.concat(TODOS_BNZ_PEND, TODOS_CIAPLAC, TODOS_CIAPLAC_PEND).forEach(p => { if((p.pks || []).join(',') === pks) p.obs_comissao = r.texto || ''; });
+    fecha(); renderFinanceiro();
+  };
+  f.querySelector('#obs-ok').onclick = salva;
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter') salva(); if(e.key === 'Escape') fecha(); });
+}
+document.addEventListener('click', e => { const td = e.target.closest && e.target.closest('td.obs-edit'); if(td && !CONFERENCIA) abreObs(td); });
 function tdComissao(p){ return CONFERENCIA ? '' : `<td class="num">${fmtReais(p.comissao || 0)}</td>`; }
 let sortCiaplac = { col:'data_entrega', dir:-1 };
 let sortBnz = { col:'data_entrega', dir:-1 };
